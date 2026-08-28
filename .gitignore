@@ -1,0 +1,13 @@
+# Virtual environment — created with pip, not part of the repository
+.venv/
+
+# IDE settings
+.idea/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Working notes for the maintainer — kept local, not part of the published examples
+CLAUDE.md
+PLAN.md
