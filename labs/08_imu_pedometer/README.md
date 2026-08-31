@@ -98,6 +98,22 @@ first footfall and pays for that with false positives.
 Neither is wrong. They answer slightly different questions, and which one you
 want depends on whether a missing step or an invented one costs you more.
 
+It is tempting to read that table as a win for the code in this file — the
+errors are smaller in three rows out of four. Resist it. Added up, the two are
+level: ten steps of error here against nine for the chip. And the comparison
+is rigged in our favour, because the threshold and the deaf time were **chosen
+using walks 1 and 3**, which then appear in the table as results. The chip
+tuned nothing.
+
+The one genuinely blind test is walk 4, the only one recorded after the
+settings were fixed. There the chip counted 40 of 40 and this lab counted 41.
+
+The honest summary is that they split by pace: on a slow, shuffling walk we
+win, because the chip's warm-up costs it four steps out of twenty; at a normal
+pace the chip wins. What this lab has over the chip is not accuracy. It is that
+every decision in it is visible and adjustable, and you can watch exactly which
+spike became a step.
+
 ## No setting works at every speed
 
 This is the result worth taking away, and it came out of the sweep rather than
