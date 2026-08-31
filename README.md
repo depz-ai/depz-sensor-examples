@@ -10,7 +10,7 @@ This is the sensor season of the series. The stereo-camera one lives in
 [depz-camera-examples](https://github.com/depz-ai/depz-camera-examples).
 
 **Status:** the ultrasonic labs are finished, the ToF labs are in progress, and
-the IMU labs have started. Two more IMU labs are on the way.
+two of the three IMU labs are done. The pedometer is on the way.
 
 | # | Lab | Sensor | What it does |
 |---|---|---|---|
@@ -20,6 +20,7 @@ the IMU labs have started. Two more IMU labs are on the way.
 | 4 | [The first depth map](labs/04_tof_depth_map/) | VL53L8CH | 64 distances at once: junk in empty cells, the grid's real orientation, and whether a flat wall arrives flat. Wall at 1.000 m by tape, centre reads 1.009 m, cell noise 4.3 mm |
 | 5 | [In and out](labs/05_tof_direction_f/) | VL53L8CH | Two halves of the matrix used as two beams: direction from which one fired first. Counts walking pace reliably; running is not verified yet |
 | 6 | [A spirit level](labs/06_imu_level/) | BNO086 | Tilt from gravity alone — no calibration, no quaternion. Checked against a tape at three known angles: the scale is honest to 0.13%, the zero is 0.61° off, and the sensor's own \|g\| says why |
+| 7 | [Orientation in space](labs/07_imu_orientation/) | BNO086 | The quaternion, and the two ways it lies while looking healthy: a heading the chip admits could be 180° out, and Euler angles that fall apart at vertical. Checked against a right angle: 90.65° and 89.82° |
 
 ## The hardware
 
