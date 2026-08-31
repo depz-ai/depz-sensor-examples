@@ -9,8 +9,8 @@ or your own feet.
 This is the sensor season of the series. The stereo-camera one lives in
 [depz-camera-examples](https://github.com/depz-ai/depz-camera-examples).
 
-**Status:** the ultrasonic labs are finished, the ToF labs are in progress. More
-ToF labs and three IMU labs are on the way.
+**Status:** the ultrasonic labs are finished, the ToF labs are in progress, and
+the IMU labs have started. Two more IMU labs are on the way.
 
 | # | Lab | Sensor | What it does |
 |---|---|---|---|
@@ -19,6 +19,7 @@ ToF labs and three IMU labs are on the way.
 | 3 | [Counting crossings](labs/03_sr04_counter/) | HC-SR04 | Thresholds with hysteresis, a detection zone measured from the noise floor — and the honest limit: one sensor counts presence, not direction |
 | 4 | [The first depth map](labs/04_tof_depth_map/) | VL53L8CH | 64 distances at once: junk in empty cells, the grid's real orientation, and whether a flat wall arrives flat. Wall at 1.000 m by tape, centre reads 1.009 m, cell noise 4.3 mm |
 | 5 | [In and out](labs/05_tof_direction_f/) | VL53L8CH | Two halves of the matrix used as two beams: direction from which one fired first. Counts walking pace reliably; running is not verified yet |
+| 6 | [A spirit level](labs/06_imu_level/) | BNO086 | Tilt from gravity alone — no calibration, no quaternion. Checked against a tape at three known angles: the scale is honest to 0.13%, the zero is 0.61° off, and the sensor's own \|g\| says why |
 
 ## The hardware
 
@@ -59,7 +60,7 @@ The port is found automatically when one board is plugged in. With several,
 name it: `--port /dev/ttyACM0`.
 
 Output is terminal graphics, so nothing extra is needed and the labs work over
-ssh. The ToF labs also open a window, which needs a desktop session. Your
+ssh. The ToF and IMU labs also open a window, which needs a desktop session. Your
 terminal has to support colour — every modern one does.
 
 ## If the sensor does not answer
