@@ -9,8 +9,8 @@ or your own feet.
 This is the sensor season of the series. The stereo-camera one lives in
 [depz-camera-examples](https://github.com/depz-ai/depz-camera-examples).
 
-**Status:** the ultrasonic labs are finished, the ToF labs are in progress, and
-two of the three IMU labs are done. The pedometer is on the way.
+**Status:** the ultrasonic and IMU labs are finished; the ToF labs are in
+progress. More ToF labs may follow.
 
 | # | Lab | Sensor | What it does |
 |---|---|---|---|
@@ -21,6 +21,7 @@ two of the three IMU labs are done. The pedometer is on the way.
 | 5 | [In and out](labs/05_tof_direction_f/) | VL53L8CH | Two halves of the matrix used as two beams: direction from which one fired first. Counts walking pace reliably; running is not verified yet |
 | 6 | [A spirit level](labs/06_imu_level/) | BNO086 | Tilt from gravity alone — no calibration, no quaternion. Checked against a tape at three known angles: the scale is honest to 0.13%, the zero is 0.61° off, and the sensor's own \|g\| says why |
 | 7 | [Orientation in space](labs/07_imu_orientation/) | BNO086 | The quaternion, and the two ways it lies while looking healthy: a heading the chip admits could be 180° out, and Euler angles that fall apart at vertical. Checked against a right angle: 90.65° and 89.82° |
+| 8 | [A pedometer](labs/08_imu_pedometer/) | BNO086 | Counting footfalls from acceleration, checked with feet over four walks. Carried in a hand the steps vanish entirely; and no fixed threshold works at every walking speed — the settings exact on a slow walk count 42 for 30 on a brisk one |
 
 ## The hardware
 
