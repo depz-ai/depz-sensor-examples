@@ -72,17 +72,7 @@ python examples\01_sr04_ruler\sr04_ruler.py --temp 30 --plot
 
 This creates a private Python environment inside the repository folder, installs the SDK and OpenCV into it and runs the example from there — nothing touches your system Python.
 
-With no flags it runs the live terminal mode: assumes 20 °C, averages the last 20 readings and prints the single reading, the answer with outliers dropped, the plain average and median for comparison, the window spread, the jitter and how many echoes were lost. `--temp` alone is worth 2 % of the distance, so set it.
-
-| Flag | Default | What it does |
-|---|---|---|
-| `--temp °C` | 20 | air temperature — the speed of sound, and so every distance, depends on it |
-| `--window N` | 20 | how many recent readings to average in live mode |
-| `--truth m` | — | the distance from the tape measure: a dashed line in the plot, the gap in millimetres in the terminal |
-| `--plot` | off | a window with a live time plot instead of the terminal (needs OpenCV) |
-| `--study` | off | collect a sample set, print a histogram of what the sensor reports and a table of how much averaging you need |
-| `--blocks N` | 5 | sample size for `--study`: blocks per largest window (5 → 1000 readings) |
-| `--port PATH` | auto | the board's port, if several boards are plugged in |
+With no flags it prints live readings in the terminal, assuming 20 °C and averaging the last 20 readings. `--temp` alone is worth 2 % of the distance, so set it.
 
 `Ctrl+C` quits; in the plot window, `q` or `Esc`.
 
@@ -156,18 +146,7 @@ So the project does not take the median. It takes the **densest cluster**: sort 
 
 ```python
 def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
-    """Answer taken from the densest cluster. Returns (answer, discarded).
-
-    The sensor replies about the nearest object anywhere in its ~50° cone, so a
-    sample set holds echoes from several things at once: a narrow dense peak
-    from the target, and a smeared tail from a sofa or a desk grazed edge-on.
-
-    A median does not survive that. Once stray echoes outnumber the target, the
-    median slides into the tail — measured on the bench, it missed by 0.35 m.
-    The target, however, always forms the DENSEST cluster: it alone reflects
-    consistently while everything else is spread out. So we find the most
-    crowded window a few steps wide and average only that.
-    """
+    """Answer taken from the densest cluster. Returns (answer, discarded)."""
     if len(samples) < 3:
         return statistics.fmean(samples), 0
 
@@ -212,91 +191,24 @@ This is the payoff. With the temperature left at its default the sensor read 2.3
 
 What remains is visible in the table: **about −10 mm at both distances**. Equal, therefore an offset and not a scale error. The board's clock is honest, so is the speed of sound now, and those ten millimetres are the bench geometry: a misaimed axis, and the shortest path versus the tape's own line.
 
-## What the tool shows
+## What the script does
 
-**Live mode** (the default) prints the single value, the answer with outliers dropped, the plain average and median for comparison, the window spread, jitter and a count of missing echoes. Everything comes out of one sliding window:
-
-```python
-class Window:
-    """Sliding window of recent readings, plus a count of missing echoes."""
-
-    def __init__(self, size: int):
-        self.samples: deque[float] = deque(maxlen=size)
-        self.total = 0
-        self.lost = 0
-
-    def add(self, metres: float | None) -> None:
-        self.total += 1
-        if metres is None:
-            self.lost += 1
-        else:
-            self.samples.append(metres)
-
-    @property
-    def ready(self) -> bool:
-        return len(self.samples) > 0
-
-    def stats(self, step_m: float) -> dict:
-        s = list(self.samples)
-        answer, dropped = robust_mean(s, step_m)
-        return {
-            "answer": answer,
-            "dropped": dropped,
-            "last": s[-1],
-            "mean": statistics.fmean(s),
-            "median": statistics.median(s),
-            "lo": min(s),
-            "hi": max(s),
-            "sd": statistics.pstdev(s) if len(s) > 1 else 0.0,
-            "n": len(s),
-        }
-```
+**With no flags** the script prints, right in the terminal, the single value, the answer with outliers dropped, the plain average and median for comparison, the window spread, jitter and a count of missing echoes. Everything comes out of one sliding window of the last `--window` readings.
 
 **`--plot`** draws three things at once: the raw readings as a pale comb, the answer as a solid line, and every reading the rejection discarded as a red dot. Add `--truth` and the measured distance shows up as a dashed line, so you can see whether the answer sits on it or beside it.
 
-```python
-            # A reading counts as dropped when it sits further from the answer
-            # than the cluster width used by robust_mean.
-            dropped = (reading is not None and answer is not None
-                       and abs(reading - answer) > step_m * 3)
-            history.append((now, reading, answer, dropped))
-```
-
-The tiles below the plot deliberately cover different time spans, so they answer different questions:
-
-| tile | what it says |
-|---|---|
-| ANSWER | the averaged answer, outliers dropped |
-| SINGLE READING | the latest raw value, and how far a reading typically strays from the mean |
-| MIN / MAX | the extremes across the whole plotted 10 s, strays included |
-| SPREAD | how much it wavers right now, over the averaging window alone |
-| RATE | readings per second, and how many echoes came back empty |
-| VS MEASURED | the gap against `--truth` |
-
 **`--study`** collects a sample set (hold the sensor still), draws a histogram — the steps and the stray reflections are both visible there — and builds a table of how far the answer wanders when averaged over N readings, with and without rejection. That table is where the "50 readings clean, 100 with a sofa" numbers come from.
 
-```python
-    # The main table: cut the sample set into blocks of N, average each block and
-    # see how far the blocks disagree. That is the honest answer to "how much
-    # does the result wander if I average N readings".
-    print("  how much averaging (how far the answer wanders between blocks):")
-    print("    readings    time     plain average    outliers dropped")
-    rate = len(samples) / elapsed if elapsed else 0.0
-    rows: list[tuple[int, float, float]] = []
-    for n in STUDY_WINDOWS:
-        blocks = [samples[i:i + n] for i in range(0, len(samples) - n + 1, n)]
-        blocks = [b for b in blocks if len(b) == n]
-        if len(blocks) < 2:
-            continue
-        plain = [statistics.fmean(b) for b in blocks]
-        clean = [robust_mean(b, step_m)[0] for b in blocks]
-        secs = n / rate if rate else 0.0
-        spread_plain = (max(plain) - min(plain)) * 1000.0
-        spread_clean = (max(clean) - min(clean)) * 1000.0
-        rows.append((n, spread_plain, spread_clean))
-        print(f"    {n:5d}      {secs:5.1f} s    {spread_plain:8.2f} mm"
-              f"       {spread_clean:8.2f} mm")
-```
+All the flags in one place:
+
+| Flag | Default | What it does |
+|---|---|---|
+| `--temp °C` | 20 | air temperature — the speed of sound, and so every distance, depends on it |
+| `--window N` | 20 | how many recent readings to average |
+| `--truth m` | — | the distance from the tape measure: a dashed line in the plot, the gap in millimetres in the terminal |
+| `--plot` | off | a window with a live time plot instead of the terminal (needs OpenCV) |
+| `--study` | off | collect a sample set, print a histogram of what the sensor reports and a table of how much averaging you need |
+| `--port PATH` | auto | the board's port, if several boards are plugged in |
 
 ## Limits of the sensor
 
@@ -304,9 +216,17 @@ The tiles below the plot deliberately cover different time spans, so they answer
 - **Below two centimetres the sensor is blind:** the transducer is still ringing and drowns the echo.
 - **A doorway is a black hole:** the sound leaves and never comes back.
 
-## Bench notes
+## Benchmark
 
-Bench (21 Aug 2026, room at 30 °C): board on a desk, aimed at a flat patch of wall, sofa at the foot of the wall. Distances measured with a tape to the front rim of the transducer cylinders, good to ±2–3 mm.
+One bench, one afternoon (21 Aug 2026, room at 30 °C): the HC-SR04 USB lying on a desk, aimed at a flat patch of wall, a sofa at the foot of that wall, ~50 readings per second. Every distance was measured with a tape from the front rim of the transducer cylinders to the wall, good to ±2–3 mm. All the numbers in this article come from these setups:
+
+| Tape distance | In the cone | What it measured |
+|---|---|---|
+| 0.100 m | wall only | the resolution step: readings fell into two clusters, 0.0955 and 0.0998 m — 4.46 mm apart |
+| 0.530 m | wall only | the screenshot at the top: `--plot --truth 0.530`, raw comb 12.9 mm wide, answer 0.1 mm off |
+| 1.000 m | wall only | stray-echo rate on a clean bench: 6–9 %, all nearer than the wall |
+| 1.050 m and 1.550 m | wall only | the two-point tape comparison: −30/−34 mm at `--temp 20`, −10 mm at `--temp 30` — the scale-vs-offset table above |
+| 1.550 m | wall + sofa in the lower edge | interference: 70 % strays smeared 0.8–1.5 m; cluster 1.515 m correct, median off by 0.10 m |
 
 - **Thickness of a ChArUco board in front of the wall:** the sensor reported a 10.2 mm difference between readings with and without it. The board itself is 6 mm and did not sit flush against the wall — the remaining ~4 mm is the gap.
 - **The plot window** (screenshot above) is a real capture from this bench, not a mock-up: the raw comb covers 12.9 mm — three resolution steps — at 50 Hz, while the averaged answer sits **0.1 mm** from the measured 0.530 m. That is closer than the tape can be read, so treat it as "within tape accuracy" rather than as a hundredth of a millimetre of truth.

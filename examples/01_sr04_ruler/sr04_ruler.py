@@ -49,6 +49,10 @@ SAMPLE_PERIOD_US = 20_000
 # more averaging buys nothing, so there is no point going further.
 STUDY_WINDOWS = (1, 2, 5, 10, 20, 50, 100, 200)
 
+# Blocks per largest window for --study: 5 × 200 = 1000 readings, ~20 s. Enough
+# blocks to see how far same-size averages disagree, short enough to hold still.
+STUDY_BLOCKS = 5
+
 # Plot window (--plot). Ten seconds of history, same as the DEPZ viewer shows.
 PLOT_W, PLOT_H = 1100, 560
 PLOT_SECONDS = 10.0
@@ -405,7 +409,7 @@ def run_live(dev, args) -> None:
 def run_study(dev, args) -> None:
     step = step_mm(args.temp)
     step_m = step / 1000.0
-    need = max(STUDY_WINDOWS) * args.blocks
+    need = max(STUDY_WINDOWS) * STUDY_BLOCKS
 
     print("DEPZ · Example project 1 · how much averaging you need")
     print(f"port {dev.port}   air {args.temp:.0f} °C   step ~{step:.1f} mm")
@@ -544,8 +548,6 @@ def main(argv: list[str] | None = None) -> int:
                    help="live window with a time plot instead of terminal output")
     p.add_argument("--study", action="store_true",
                    help="collect a sample set and show how much averaging is needed")
-    p.add_argument("--blocks", type=int, default=5,
-                   help="blocks per largest window in --study")
     args = p.parse_args(argv)
 
     # Temperature is not decoration: on the bench it explained three quarters of
