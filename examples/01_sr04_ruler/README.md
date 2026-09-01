@@ -4,102 +4,129 @@
 
 ![The plot window: raw readings behind, the answer in front](https://depz.ai/examples/sensors-01-ruler.png)
 
-*Ten seconds of a sensor pointed at a wall 0.530 m away. The pale comb is the raw readings; the green line is this project's answer — averaged, outliers dropped — sitting on the dashed measured distance.*
+*Ten seconds of readings from a wall 0.530 m away. Pale dots: raw readings. Green line: the project's answer — averaged, outliers dropped. Dashed line: the distance measured with a tape.*
 
 Hardware used: [Ultrasonic HC-SR04 USB](https://depz.ai/product/ultrasonic-sensor-hc-sr04-usb).
 
-## Short answer
-
-An ultrasonic sensor looks simple: send a click, wait for the echo, halve it. In practice a single reading is almost always wrong, and wrong for three different reasons at once. This project takes them apart one at a time, ends with a number you can check against a tape measure — and tells you when the sensor cannot be trusted at all.
-
-|  | What the bench showed |
-|---|---|
-| **Single reading** | comes in 4.3 mm steps — one 40 kHz wave period; measured 4.46 mm apart |
-| **100 readings averaged** | the spread shrinks from 4.5 mm to 0.3 mm |
-| **Stray echoes** | 6–9 % at one metre, 70 % with a sofa in the cone — every one of them **nearer** than the target, so the densest cluster ignores them |
-| **Against a tape** | 2.3 % short with the default air temperature; with `--temp 30` a constant −10 mm remains — bench geometry, not the sensor |
-| **Readings needed** | about 50 on a clean bench, 100 with strong interference |
-
 ## Quick start
 
-One Python file, one USB board. Plug the HC-SR04 USB in, install the SDK, run:
+**Linux**
+
+Plug the HC-SR04 USB into a USB port.
+
+On Ubuntu, press `Ctrl` + `Alt` + `T` to open a terminal. If you have never used Python or a USB serial device on this machine, run these once:
+
+```bash
+sudo apt install python3 python3-venv git
+sudo usermod -aG dialout $USER
+```
+
+Log out and back in, open a terminal again and:
 
 ```bash
 git clone https://github.com/depz-ai/depz-sensor-examples.git
 cd depz-sensor-examples
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/depz-sensor list        # the board should show up here
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python examples/01_sr04_ruler/sr04_ruler.py --temp 30 --plot
 ```
+
+**macOS**
+
+Plug the HC-SR04 USB into a USB port.
+
+Install [Python for macOS](https://www.python.org/downloads/macos/) — the `python3` built into macOS is 3.9, too old for the SDK. Then open the Terminal app: press `⌘` + `Space`, type `Terminal`, press `Enter`. If you have never used developer tools on this Mac, run this once — it installs `git`:
 
 ```bash
-.venv/bin/python examples/01_sr04_ruler/sr04_ruler.py --temp 30
+xcode-select --install
 ```
 
-Four modes, one flag apart:
+Then, in that terminal:
 
-| Flag | What it does |
-|---|---|
-| `--temp 30` | air temperature in °C (default 20) — set it, it is worth 2 % |
-| `--plot` | a window with a time plot instead of the terminal (needs OpenCV) |
-| `--truth 1.550` | the tape-measured distance in metres, drawn as a dashed line |
-| `--study` | collect a sample set and print how much averaging you need |
-| `--window 50` | averaging window in live mode |
-| `--port /dev/ttyACM0` | if several boards are plugged in |
+```bash
+git clone https://github.com/depz-ai/depz-sensor-examples.git
+cd depz-sensor-examples
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python examples/01_sr04_ruler/sr04_ruler.py --temp 30 --plot
+```
 
-The terminal modes work without OpenCV; only `--plot` needs it. `Ctrl+C` quits; in the plot window, `q` or `Esc`.
+**Windows**
+
+Plug the HC-SR04 USB into a USB port.
+
+Install [Python](https://www.python.org/downloads/windows/) (keep "Install launcher" ticked) and [Git for Windows](https://git-scm.com/download/win). Then open the Command Prompt: `Win` + `R`, type `cmd`, `Enter`.
+
+In that window:
+
+```bat
+git clone https://github.com/depz-ai/depz-sensor-examples.git
+cd depz-sensor-examples
+py -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python examples\01_sr04_ruler\sr04_ruler.py --temp 30 --plot
+```
+
+This creates a private Python environment inside the repository folder, installs the SDK and OpenCV into it and runs the example from there — nothing touches your system Python.
+
+With no flags it runs the live terminal mode: assumes 20 °C, averages the last 20 readings and prints the single reading, the answer with outliers dropped, the plain average and median for comparison, the window spread, the jitter and how many echoes were lost. `--temp` alone is worth 2 % of the distance, so set it.
+
+| Flag | Default | What it does |
+|---|---|---|
+| `--temp °C` | 20 | air temperature — the speed of sound, and so every distance, depends on it |
+| `--window N` | 20 | how many recent readings to average in live mode |
+| `--truth m` | — | the distance from the tape measure: a dashed line in the plot, the gap in millimetres in the terminal |
+| `--plot` | off | a window with a live time plot instead of the terminal (needs OpenCV) |
+| `--study` | off | collect a sample set, print a histogram of what the sensor reports and a table of how much averaging you need |
+| `--blocks N` | 5 | sample size for `--study`: blocks per largest window (5 → 1000 readings) |
+| `--port PATH` | auto | the board's port, if several boards are plugged in |
+
+`Ctrl+C` quits; in the plot window, `q` or `Esc`.
 
 ## How the sensor measures
 
-The transducer clicks at 40 kHz and listens. The board times how long it takes for the returning sound to cross a threshold and reports that in microseconds. We turn it into a distance ourselves: time times the speed of sound, halved — the sound travelled to the object and back.
+The HC-SR04 is the two-eyed module from every robotics kit: one cylinder is a tiny loudspeaker, the other a microphone. For each measurement it sends a short burst of ultrasound — eight clicks at 40 kHz, far above hearing — and listens for the echo. The DEPZ USB board triggers the burst, times how long the echo takes to come back, and hands you that time over USB in microseconds.
 
-Reading the board through the SDK is a few lines: open it, set the sample period, and consume the stream — every message carries the echo time in microseconds and a validity flag.
+Turning the time into a distance is one multiplication: sound travels at about 343 m/s at room temperature, and the echo covered the way to the object **and back**, so distance = time × speed of sound ÷ 2. The sensor is rated from about 2 cm to 4 m; beyond that the echo comes back too faint to hear.
 
-```python
-    try:
-        dev = open_device(args.port) if args.port else open_device()
-    except NoDepzDeviceError:
-        print("No board found. Check: .venv/bin/depz-sensor list", file=sys.stderr)
-        return 1
-    except DepzError as exc:
-        print(f"Cannot open the board: {exc}", file=sys.stderr)
-        return 1
-
-    was_period = dev.get_sample_period_us()
-    dev.set_sample_period_us(SAMPLE_PERIOD_US)
-```
+Reading it through the SDK takes a handful of lines. Open the board, start it, and every measurement carries the echo time plus a flag saying whether an echo came back at all:
 
 ```python
-    dev.start()
-    try:
-        for m in dev.stream():
-            win.add(echo_to_m(m.echo_time_us, args.temp) if m.valid else None)
-            if not win.ready:
-                continue
-            st = win.stats(step_m)
+from depz_sensor_sdk import open_device
+
+SPEED_OF_SOUND = 343.0                     # m/s, air at 20 °C
+
+board = open_device()                      # the DEPZ board on USB
+board.start()
+for measurement in board.stream():
+    if not measurement.valid:              # no echo came back
+        continue
+    round_trip_s = measurement.echo_time_us / 1_000_000
+    distance_m = round_trip_s * SPEED_OF_SOUND / 2   # there and back
+    print(f"{distance_m:.3f} m")
 ```
 
-The speed of sound depends on air temperature: 331 m/s at zero, gaining about 0.6 m/s per degree. At 20 °C that is 343 m/s. Across four metres, a cold room and a hot one differ by six centimetres, so the temperature is a flag: `--temp`.
+One refinement: the speed of sound depends on air temperature — 331 m/s at 0 °C and about 0.6 m/s more for every degree, 343 m/s at 20 °C. Over four metres a cold room and a hot one differ by six centimetres, which is why the project takes the temperature as a flag, `--temp`:
 
 ```python
 def speed_of_sound(air_temp_c: float) -> float:
-    """Speed of sound in m/s. It gains about 0.6 m/s per degree, so at four
-    metres a hot room and a cold one differ by six centimetres."""
+    """m/s: 331.3 at 0 °C, about 0.6 more for every degree."""
     return 331.3 + 0.606 * air_temp_c
 
 
-def step_mm(air_temp_c: float) -> float:
-    """The resolution step in mm: how far sound travels during one wave period,
-    halved because the sound makes a round trip."""
-    return speed_of_sound(air_temp_c) * 1000.0 / PIEZO_HZ / 2.0
-
-
-def echo_to_m(echo_us: int, air_temp_c: float) -> float:
-    return echo_us * 1e-6 * speed_of_sound(air_temp_c) / 2.0
+def distance_m(echo_time_us: int, air_temp_c: float) -> float:
+    round_trip_s = echo_time_us / 1_000_000
+    return round_trip_s * speed_of_sound(air_temp_c) / 2
 ```
 
-## Why a single reading is wrong — three reasons
+## Why a single reading is wrong — and what fixes it
 
-### 1. Readings come in 4.3 mm steps — so average them
+An ultrasonic sensor looks simple: send a click, wait for the echo, halve it. In practice a single reading is off for three separate reasons, each with its own fix. It is **coarse** — readings come in steps, so you average. It may be **about the wrong object** — the sensor hears a wide cone, so you keep the densest cluster of readings. And it is **shifted** — by the speed of sound and by the geometry of your setup, so you set the temperature and check against two distances. This project takes them apart one at a time and ends with a number you can check against a tape measure.
+
+### 1. It is coarse: readings come in 4.3 mm steps
 
 One wave period at 40 kHz lasts 25 microseconds. When the echo is loud, the threshold is crossed on the same wave every time and readings barely move. When the echo is weak, its loudness hovers around the threshold and the sensor triggers on one wave, then on the next. The result jumps by exactly one period:
 
@@ -111,11 +138,13 @@ Halved for the same reason — the round trip. That is the **step**: no single r
 
 **Measured on the bench.** Readings fell into two clusters, 0.0955 m and 0.0998 m, 4.46 mm apart against a predicted 4.3 mm. Confirmed.
 
-The jitter has an upside. If the truth sits between two steps, the sensor lands on the upper one more often the closer the truth is to it. So **the average of many readings settles between the steps** and beats a single one: averaging 100 readings shrank the spread from 4.5 mm to 0.3 mm. Try it below — drag the true distance and watch the average find it between the steps.
+The jitter has an upside. If the truth sits between two steps, the sensor lands on the upper one more often the closer the truth is to it. So **the average of many readings settles between the steps** and beats a single one: averaging 100 readings shrank the spread from 4.5 mm to 0.3 mm. Try it below: move the wall and watch — every single reading lands on a step, but the average settles between them, right on the tape.
 
 Interactive demo (on the web page): readings snap to 4.3 mm steps with jitter; a running average converges on the true value between the steps.
 
-### 2. It answers about the nearest thing in a 50° cone — so take the densest cluster
+*Illustration: how a sensor that measures in 4.3 mm steps still finds the true distance. Drag the wall to see it happen.*
+
+### 2. It may be about the wrong object: the nearest thing in a 50° cone
 
 The sensor looks through a cone of about 50° and answers about the **nearest** object inside it, no matter where the axis points. At one metre that cone covers a circle nearly a metre across; at 1.5 m, a metre and a half.
 
@@ -123,7 +152,7 @@ Hence the rule: a stray object can only pull the reading **shorter**. A reading 
 
 **Measured on the bench.** Against a wall at one metre, 6–9 % of readings were strays and every single one was nearer than the target. Moving the sensor back to 1.55 m brought a sofa at the foot of the wall into the lower edge of the cone: strays jumped to 70 %, smeared from 0.8 m to 1.5 m. The wall kept giving its own narrow peak throughout.
 
-That is why the project takes its answer from the **densest cluster, not the median**. The target alone reflects consistently and forms a narrow peak, while a sofa, a desk grazed edge-on or a door frame smear out. On the sofa bench the median missed by 0.10 m and the plain average by 0.13 m; the cluster gave the correct 1.515 m.
+So the project does not take the median. It takes the **densest cluster**: sort the readings, slide a 26 mm window (six steps) along them, keep the position that holds the most readings, average only those. The target reflects the same way every time, so its readings pile up inside one such window; a sofa or a desk edge scatters its echoes over tens of centimetres and never wins the count. On the sofa bench the median was off by 0.10 m, the plain average by 0.13 m; the cluster gave the correct 1.515 m.
 
 ```python
 def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
@@ -161,9 +190,9 @@ def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
     return statistics.fmean(core), len(samples) - len(core)
 ```
 
-The price of that rejection is sample size. On a short block the densest cluster can settle on a stray reflection, and then it loses to a plain average. The project prints the point where it becomes reliable: about 50 readings on a clean bench, 100 with the sofa in view.
+The cost is sample size. With only a handful of readings, two or three stray echoes can form the biggest cluster, and a plain average does better. `--study` prints where the cluster becomes reliable: about 50 readings on a clean bench, 100 with the sofa in view.
 
-### 3. Offset vs scale — set the temperature, then measure at two distances
+### 3. It is shifted: the speed of sound and the geometry of your bench
 
 Even with a single target and plenty of data, a gap against the tape remains. It has two parts, and telling them apart needs **two** distances:
 
@@ -283,12 +312,20 @@ Bench (21 Aug 2026, room at 30 °C): board on a desk, aimed at a flat patch of w
 - **The plot window** (screenshot above) is a real capture from this bench, not a mock-up: the raw comb covers 12.9 mm — three resolution steps — at 50 Hz, while the averaged answer sits **0.1 mm** from the measured 0.530 m. That is closer than the tape can be read, so treat it as "within tape accuracy" rather than as a hundredth of a millimetre of truth.
 - **A 500 mm baseline is short for a claim about scale.** The tape is good to ±3 mm, which is 0.6 % of the baseline. The conclusion holds because the remainder is the same at both points, but a three-metre baseline would settle it properly.
 
+## The answer: how accurate is it?
+
+|  | What the bench showed |
+|---|---|
+| **Single reading** | comes in 4.3 mm steps — one 40 kHz wave period; measured 4.46 mm apart |
+| **100 readings averaged** | the spread shrinks from 4.5 mm to 0.3 mm |
+| **Stray echoes** | 6–9 % at one metre, 70 % with a sofa in the cone — every one of them **nearer** than the target, so the densest cluster ignores them |
+| **Against a tape** | 2.3 % short with the default air temperature; with `--temp 30` a constant −10 mm remains — bench geometry, not the sensor |
+| **Readings needed** | about 50 on a clean bench, 100 with strong interference |
+
 Next in the series: the same sensor with the opposite requirement — [a parking sensor that has to answer now](https://depz.ai/developers/sensors/example-projects/sr04-parking).
 
 ## The complete code
 
-Everything above is taken from one file, `sr04_ruler.py` — here it is in full:
+Everything above is taken from one file, [sr04_ruler.py](https://github.com/depz-ai/depz-sensor-examples/blob/main/examples/01_sr04_ruler/sr04_ruler.py) — here it is in full:
 
 The complete program: [`sr04_ruler.py`](./sr04_ruler.py).
-
-The complete, runnable code of this example project is on GitHub: [sr04-ruler on GitHub](https://github.com/depz-ai/depz-sensor-examples/tree/main/examples/01_sr04_ruler).

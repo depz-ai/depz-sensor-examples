@@ -19,6 +19,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+import os
 import statistics
 import sys
 import time
@@ -29,10 +30,10 @@ try:
 except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
-        "Use the project environment:\n"
-        "    .venv/bin/python examples/01_sr04_ruler/sr04_ruler.py\n"
-        "or create it first:\n"
-        "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+        "Activate the project environment first (see README):\n"
+        "    source .venv/bin/activate        Linux / macOS\n"
+        "    .venv\\Scripts\\activate           Windows\n"
+        "then run the example again."
     )
 
 # Transducer frequency. This is where the resolution step comes from, so the
@@ -163,7 +164,6 @@ def compose_plot(history, args, step_m: float, rate: float):
     # the window is drawn by cv2.putText — so silence that one uncategorised
     # warning and keep the console readable. setdefault, so an explicit
     # QT_LOGGING_RULES from the environment still wins.
-    import os
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2  # imported here: the terminal modes must run without OpenCV
     import numpy as np
@@ -247,7 +247,6 @@ def draw_tiles(frame, tiles) -> None:
     # the window is drawn by cv2.putText — so silence that one uncategorised
     # warning and keep the console readable. setdefault, so an explicit
     # QT_LOGGING_RULES from the environment still wins.
-    import os
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2
 
@@ -275,7 +274,6 @@ def run_plot(dev, args) -> None:
     # the window is drawn by cv2.putText — so silence that one uncategorised
     # warning and keep the console readable. setdefault, so an explicit
     # QT_LOGGING_RULES from the environment still wins.
-    import os
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2
 
@@ -345,6 +343,12 @@ def run_live(dev, args) -> None:
     step = step_mm(args.temp)
     step_m = step / 1000.0
     win = Window(args.window)
+
+    # The live view redraws its lines with ANSI cursor codes. Windows Terminal
+    # understands them out of the box; the classic cmd.exe console only after
+    # this no-op call, which switches it into VT mode.
+    if os.name == "nt":
+        os.system("")
 
     header = [
         "DEPZ · Example project 1 · An honest ruler",
@@ -554,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         dev = open_device(args.port) if args.port else open_device()
     except NoDepzDeviceError:
-        print("No board found. Check: .venv/bin/depz-sensor list", file=sys.stderr)
+        print("No board found. Check: depz-sensor list", file=sys.stderr)
         return 1
     except DepzError as exc:
         print(f"Cannot open the board: {exc}", file=sys.stderr)
