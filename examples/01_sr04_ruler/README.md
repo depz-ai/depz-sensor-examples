@@ -206,9 +206,13 @@ All the flags in one place:
 | `--temp °C` | 20 | air temperature — the speed of sound, and so every distance, depends on it |
 | `--window N` | 20 | how many recent readings to average |
 | `--truth m` | — | the distance from the tape measure: a dashed line in the plot, the gap in millimetres in the terminal |
+| `--scale X` | 1.0 | multiply every distance — dial out a scale error found against the tape |
+| `--shift mm` | 0 | add a constant offset — dial out bench geometry |
 | `--plot` | off | a window with a live time plot instead of the terminal (needs OpenCV) |
 | `--study` | off | collect a sample set, print a histogram of what the sensor reports and a table of how much averaging you need |
 | `--port PATH` | auto | the board's port, if several boards are plugged in |
+
+Between them, these compensate all three reasons a single ultrasonic reading is wrong: averaging the window melts the 4.3 mm step, the densest cluster throws away stray echoes, and `--scale` with `--shift` let you dial out what no averaging can fix — the scale and offset of your own bench, measured against a tape with `--truth`.
 
 ## Limits of the sensor
 

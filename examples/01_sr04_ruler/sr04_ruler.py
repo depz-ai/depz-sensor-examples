@@ -81,8 +81,11 @@ def step_mm(air_temp_c: float) -> float:
     return speed_of_sound(air_temp_c) * 1000.0 / PIEZO_HZ / 2.0
 
 
-def echo_to_m(echo_us: int, air_temp_c: float) -> float:
-    return echo_us * 1e-6 * speed_of_sound(air_temp_c) / 2.0
+def echo_to_m(echo_us: int, air_temp_c: float,
+              scale: float = 1.0, shift_m: float = 0.0) -> float:
+    """Echo time to metres, with user calibration on top: measure against a
+    tape (--truth), then dial the remaining error out with --scale / --shift."""
+    return echo_us * 1e-6 * speed_of_sound(air_temp_c) / 2.0 * scale + shift_m
 
 
 def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
@@ -296,7 +299,8 @@ def run_plot(dev, args) -> None:
         for m in dev.stream():
             frames += 1
             now = time.monotonic()
-            reading = echo_to_m(m.echo_time_us, args.temp) if m.valid else None
+            reading = (echo_to_m(m.echo_time_us, args.temp, args.scale, args.shift / 1000.0)
+                       if m.valid else None)
             win.add(reading)
             st = win.stats(step_m) if win.ready else None
             answer = st["answer"] if st else None
@@ -370,7 +374,8 @@ def run_live(dev, args) -> None:
     dev.start()
     try:
         for m in dev.stream():
-            win.add(echo_to_m(m.echo_time_us, args.temp) if m.valid else None)
+            win.add(echo_to_m(m.echo_time_us, args.temp, args.scale, args.shift / 1000.0)
+                    if m.valid else None)
             if not win.ready:
                 continue
             st = win.stats(step_m)
@@ -425,7 +430,8 @@ def run_study(dev, args) -> None:
     try:
         for m in dev.stream():
             if m.valid:
-                samples.append(echo_to_m(m.echo_time_us, args.temp))
+                samples.append(echo_to_m(m.echo_time_us, args.temp,
+                                         args.scale, args.shift / 1000.0))
             else:
                 lost += 1
             if len(samples) >= need:
@@ -544,6 +550,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="how many recent readings to average in live mode")
     p.add_argument("--truth", type=float,
                    help="distance from the tape measure, in metres")
+    p.add_argument("--scale", type=float, default=1.0, metavar="X",
+                   help="multiply every distance — dial out a scale error "
+                        "found against the tape")
+    p.add_argument("--shift", type=float, default=0.0, metavar="MM",
+                   help="add a constant offset in millimetres — dial out "
+                        "bench geometry")
     p.add_argument("--plot", action="store_true",
                    help="live window with a time plot instead of terminal output")
     p.add_argument("--study", action="store_true",
