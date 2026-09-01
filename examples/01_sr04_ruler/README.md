@@ -114,7 +114,7 @@ def distance_m(echo_time_us: int, air_temp_c: float) -> float:
 
 ## Why a single reading is wrong — and what fixes it
 
-An ultrasonic sensor looks simple: send a click, wait for the echo, halve it. In practice a single reading is off for three separate reasons, each with its own fix. It is **coarse** — readings come in steps, so you average. It may be **about the wrong object** — the sensor hears a wide cone, so you keep the densest cluster of readings. And it is **shifted** — by the speed of sound and by the geometry of your setup, so you set the temperature and check against two distances. This project takes them apart one at a time and ends with a number you can check against a tape measure.
+An ultrasonic sensor looks simple: send a click, wait for the echo, halve it. In practice a single reading is off for three separate reasons, each with its own fix. It is **coarse** — readings come in steps, so you average. It may be **about the wrong object** — the sensor hears a wide cone, so you keep the densest cluster of readings. And it is **shifted and scaled** — by the geometry of your setup and by the speed of sound, so you set the temperature and check against two distances. This project takes them apart one at a time and ends with a number you can check against a tape measure.
 
 ### 1. It is coarse: readings come in 4.3 mm steps
 
@@ -124,7 +124,7 @@ One wave period at 40 kHz lasts 25 microseconds. When the echo is loud, the thre
 343 m/s × 25 µs ÷ 2 ≈ 4.3 mm
 ```
 
-Halved for the same reason — the round trip. That is the **step**: no single reading can be finer than it.
+Halved again because the sound makes the round trip. That is the **step**: no single reading can be finer than it.
 
 **Measured on the bench.** Readings fell into two clusters, 0.0955 m and 0.0998 m, 4.46 mm apart against a predicted 4.3 mm. Confirmed.
 
@@ -142,7 +142,7 @@ Hence the rule: a stray object can only pull the reading **shorter**. A reading 
 
 **Measured on the bench.** Against a wall at one metre, 6–9 % of readings were strays and every single one was nearer than the target. Moving the sensor back to 1.55 m brought a sofa at the foot of the wall into the lower edge of the cone: strays jumped to 70 %, smeared from 0.8 m to 1.5 m. The wall kept giving its own narrow peak throughout.
 
-So the project does not take the median. It takes the **densest cluster**: sort the readings, slide a 26 mm window (six steps) along them, keep the position that holds the most readings, average only those. The target reflects the same way every time, so its readings pile up inside one such window; a sofa or a desk edge scatters its echoes over tens of centimetres and never wins the count. On the sofa bench the median was off by 0.10 m, the plain average by 0.13 m; the cluster gave the correct 1.515 m.
+So the project does not take the median. It takes the **densest cluster**: sort the readings, slide a 26 mm window (six steps) along them, keep the position that holds the most readings, average only those. The target reflects the same way every time, so its readings pile up inside one such window. A sofa or a desk edge scatters its echoes over tens of centimetres and never wins the count. On the sofa bench the median was off by 0.35 m, the plain average by 0.13 m; the cluster gave the correct 1.515 m.
 
 ```python
 def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
@@ -175,31 +175,31 @@ Animation (on the web page): the ping spreads through the ~50° cone and the nea
 
 *Illustration: the ping spreads through the whole ~50° cone and the nearest echo to return wins. A small box reflects weakly, so it does not win every time — most readings still measure the wall, but a few percent report the box instead. Those are the strays: rare, and always nearer than the target.*
 
-### 3. It is shifted: the speed of sound and the geometry of your bench
+### 3. It is shifted and scaled: the speed of sound and the geometry of your bench
 
 Even with a single target and plenty of data, a gap against the tape remains. It has two parts, and telling them apart needs **two** distances:
 
 - **a constant offset** — the same at any range. Everything geometric lives here: a misaimed axis, and the fact that the sensor measures the shortest path to the wall while the tape runs along its own line;
 - **a scale error** — growing proportionally. Either the air temperature is wrong, or the board's clock drifts.
 
-Separate them like this: measure, move the sensor a known distance **without turning it**, measure again. Everything constant cancels in the difference and only the scale is left.
+Separate them by measuring at **two** distances: move the sensor a known distance **without turning it** and measure again. The reading rule is simple — an error that **grows with distance** is a scale error, an error that **stays the same** at both distances is an offset.
 
 **Measured on the bench** (21 Aug 2026, room at 30 °C):
 
-| tape | answer at `--temp 20` | error | answer at `--temp 30` | error |
+| Tape | Answer at `--temp 20` | Error | Answer at `--temp 30` | Error |
 |---|---|---|---|---|
 | 1.050 m | 1.020 m | −29.9 mm | 1.039 m | −10.6 mm |
 | 1.550 m | 1.516 m | −34.4 mm | 1.541 m | −9.3 mm |
 
-This is the payoff. With the temperature left at its default the sensor read 2.3 % short, which looked exactly like a scale error — a drifting board clock. But the room was at 30 °C, not 20: sound travels 349.5 m/s there instead of 343, 1.9 % faster. Passing `--temp 30` dropped the gap from 35 mm to 9.
+Apply the rule to the `--temp 20` columns: the error **grows** with distance, −29.9 mm at one metre but −34.4 mm at one and a half — a scale error, about 2.3 % short, looking exactly like a drifting board clock. But the room was at 30 °C, not 20: sound travels 349.5 m/s there instead of 343, 1.9 % faster. Passing `--temp 30` dropped the gap from ~30–35 mm to ~10.
 
-What remains is visible in the table: **about −10 mm at both distances**. Equal, therefore an offset and not a scale error. The board's clock is honest, so is the speed of sound now, and those ten millimetres are the bench geometry: a misaimed axis, and the shortest path versus the tape's own line.
+Now the `--temp 30` columns: **about −10 mm at both distances**. The error no longer grows — by the same rule, that is an offset and not a scale error. The board's clock is honest, so is the speed of sound now, and those ten millimetres are the bench geometry: a misaimed axis, and the shortest path versus the tape's own line. Knowing the remainder, you can dial it out: on this bench `--shift 10` cancels the offset, and a genuine scale error would go into `--scale`.
 
 ## What the script does
 
 **With no flags** the script prints, right in the terminal, the single value, the answer with outliers dropped, the plain average and median for comparison, the window spread, jitter and a count of missing echoes. Everything comes out of one sliding window of the last `--window` readings.
 
-**`--plot`** draws three things at once: the raw readings as a pale comb, the answer as a solid line, and every reading the rejection discarded as a red dot. Add `--truth` and the measured distance shows up as a dashed line, so you can see whether the answer sits on it or beside it.
+**`--plot`** draws three things at once: the raw readings as a pale comb, the answer as a solid line, and readings far from the answer — the ones the rejection throws away — as red dots. Add `--truth` and the measured distance shows up as a dashed line, so you can see whether the answer sits on it or beside it.
 
 **`--study`** collects a sample set (hold the sensor still), draws a histogram — the steps and the stray reflections are both visible there — and builds a table of how far the answer wanders when averaged over N readings, with and without rejection. That table is where the "50 readings clean, 100 with a sofa" numbers come from.
 
@@ -216,7 +216,7 @@ All the flags in one place:
 | `--study` | off | collect a sample set, print a histogram of what the sensor reports and a table of how much averaging you need |
 | `--port PATH` | auto | the board's port, if several boards are plugged in |
 
-Between them, these compensate all three reasons a single ultrasonic reading is wrong: averaging the window melts the 4.3 mm step, the densest cluster throws away stray echoes, and `--scale` with `--shift` let you dial out what no averaging can fix — the scale and offset of your own bench, measured against a tape with `--truth`.
+Between them, these compensate for all three reasons a single ultrasonic reading is wrong: averaging the window melts the 4.3 mm step, the densest cluster throws away stray echoes, and `--scale` with `--shift` let you dial out what no averaging can fix — the scale and offset of your own bench, measured against a tape with `--truth`.
 
 ## Benchmark
 
@@ -224,11 +224,11 @@ One bench, one afternoon (21 Aug 2026, room at 30 °C): the HC-SR04 USB lying on
 
 | Tape distance | In the cone | What it measured |
 |---|---|---|
-| 0.100 m | wall only | the resolution step: readings fell into two clusters, 0.0955 and 0.0998 m — 4.46 mm apart |
-| 0.530 m | wall only | the screenshot at the top: `--plot --truth 0.530`, raw comb 12.9 mm wide, answer 0.1 mm off |
-| 1.000 m | wall only | stray-echo rate on a clean bench: 6–9 %, all nearer than the wall |
-| 1.050 m and 1.550 m | wall only | the two-point tape comparison: −30/−34 mm at `--temp 20`, −10 mm at `--temp 30` — the scale-vs-offset table above |
-| 1.550 m | wall + sofa in the lower edge | interference: 70 % strays smeared 0.8–1.5 m; cluster 1.515 m correct, median off by 0.10 m |
+| 0.100 m | wall only | the resolution-step measurement (reason 1) |
+| 0.530 m | wall only | the screenshot at the top: `--plot --truth 0.530` |
+| 1.000 m | wall only | stray-echo rate on a clean bench (reason 2) |
+| 1.050 m and 1.550 m | wall only | the two-point tape comparison (reason 3) |
+| 1.550 m | wall + sofa in the lower edge | the interference test: densest cluster vs median (reason 2) |
 
 - **Thickness of a ChArUco board in front of the wall:** the sensor reported a 10.2 mm difference between readings with and without it. The board itself is 6 mm and did not sit flush against the wall — the remaining ~4 mm is the gap.
 - **The plot window** (screenshot above) is a real capture from this bench, not a mock-up: the raw comb covers 12.9 mm — three resolution steps — at 50 Hz, while the averaged answer sits **0.1 mm** from the measured 0.530 m. That is closer than the tape can be read, so treat it as "within tape accuracy" rather than as a hundredth of a millimetre of truth.
@@ -243,6 +243,8 @@ One bench, one afternoon (21 Aug 2026, room at 30 °C): the HC-SR04 USB lying on
 | **Stray echoes** | 6–9 % at one metre, 70 % with a sofa in the cone — every one of them **nearer** than the target, so the densest cluster ignores them |
 | **Against a tape** | 2.3 % short with the default air temperature; with `--temp 30` a constant −10 mm remains — bench geometry, not the sensor |
 | **Readings needed** | about 50 on a clean bench, 100 with strong interference |
+
+The bottom line: there is no single accuracy number — it depends on three things you control. How clean the space to the target is: clutter in the cone costs samples and, past a point, the answer itself. Whether the real air temperature is set: the default alone cost 2 % on this bench. And whether you calibrated the rest away with `--scale` and `--shift` against a tape. With all three done, this bench landed within tape accuracy (±2–3 mm); with none of them, expect centimetres.
 
 ## Limits of the sensor
 

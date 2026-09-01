@@ -88,6 +88,13 @@ def echo_to_m(echo_us: int, air_temp_c: float,
     return echo_us * 1e-6 * speed_of_sound(air_temp_c) / 2.0 * scale + shift_m
 
 
+def to_metres(m, args):
+    """One measurement → metres with the CLI calibration; None when no echo."""
+    if not m.valid:
+        return None
+    return echo_to_m(m.echo_time_us, args.temp, args.scale, args.shift / 1000.0)
+
+
 def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
     """Answer taken from the densest cluster. Returns (answer, discarded).
 
@@ -158,7 +165,20 @@ class Window:
         }
 
 
-def compose_plot(history, args, step_m: float, rate: float):
+def import_cv2():
+    """OpenCV, imported lazily — the terminal modes must run without it.
+
+    Also silences the one Qt warning: OpenCV ships a Qt build with no fonts of
+    its own and Qt complains on every start, yet nothing here uses Qt fonts —
+    every label is drawn by cv2.putText. setdefault, so an explicit
+    QT_LOGGING_RULES from the environment still wins.
+    """
+    os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
+    import cv2
+    return cv2
+
+
+def compose_plot(history, args, step_m: float):
     """Render one frame of the plot window.
 
     Kept separate from the loop so a screenshot for the README can be produced
@@ -166,13 +186,7 @@ def compose_plot(history, args, step_m: float, rate: float):
 
     `history` is a list of (timestamp, reading or None, answer, was_dropped).
     """
-    # OpenCV ships a Qt build with no fonts of its own, so Qt prints a font
-    # warning on every start. Nothing here depends on Qt fonts — every label in
-    # the window is drawn by cv2.putText — so silence that one uncategorised
-    # warning and keep the console readable. setdefault, so an explicit
-    # QT_LOGGING_RULES from the environment still wins.
-    os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
-    import cv2  # imported here: the terminal modes must run without OpenCV
+    cv2 = import_cv2()
     import numpy as np
 
     frame = np.full((PLOT_H, PLOT_W, 3), COL_BG, dtype=np.uint8)
@@ -249,13 +263,7 @@ def compose_plot(history, args, step_m: float, rate: float):
 
 def draw_tiles(frame, tiles) -> None:
     """Bottom row of stat boxes, in the style of the DEPZ viewer."""
-    # OpenCV ships a Qt build with no fonts of its own, so Qt prints a font
-    # warning on every start. Nothing here depends on Qt fonts — every label in
-    # the window is drawn by cv2.putText — so silence that one uncategorised
-    # warning and keep the console readable. setdefault, so an explicit
-    # QT_LOGGING_RULES from the environment still wins.
-    os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
-    import cv2
+    cv2 = import_cv2()
 
     n = len(tiles)
     gap = 12
@@ -276,18 +284,12 @@ def draw_tiles(frame, tiles) -> None:
 
 
 def run_plot(dev, args) -> None:
-    # OpenCV ships a Qt build with no fonts of its own, so Qt prints a font
-    # warning on every start. Nothing here depends on Qt fonts — every label in
-    # the window is drawn by cv2.putText — so silence that one uncategorised
-    # warning and keep the console readable. setdefault, so an explicit
-    # QT_LOGGING_RULES from the environment still wins.
-    os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
-    import cv2
+    cv2 = import_cv2()
 
     step = step_mm(args.temp)
     step_m = step / 1000.0
     win = Window(args.window)
-    history: list[tuple[float, float | None, float | None, bool]] = []
+    history: deque[tuple[float, float | None, float | None, bool]] = deque()
 
     title = "DEPZ Example project 1 - an honest ruler"
     cv2.namedWindow(title, cv2.WINDOW_AUTOSIZE)
@@ -299,8 +301,7 @@ def run_plot(dev, args) -> None:
         for m in dev.stream():
             frames += 1
             now = time.monotonic()
-            reading = (echo_to_m(m.echo_time_us, args.temp, args.scale, args.shift / 1000.0)
-                       if m.valid else None)
+            reading = to_metres(m, args)
             win.add(reading)
             st = win.stats(step_m) if win.ready else None
             answer = st["answer"] if st else None
@@ -311,10 +312,10 @@ def run_plot(dev, args) -> None:
                        and abs(reading - answer) > step_m * 3)
             history.append((now, reading, answer, dropped))
             while history and now - history[0][0] > PLOT_SECONDS:
-                history.pop(0)
+                history.popleft()
 
             rate = frames / (now - started) if now > started else 0.0
-            frame = compose_plot(history, args, step_m, rate)
+            frame = compose_plot(history, args, step_m)
 
             if st:
                 spread_mm = (st["hi"] - st["lo"]) * 1000.0
@@ -342,6 +343,8 @@ def run_plot(dev, args) -> None:
             cv2.imshow(title, frame)
             if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                 break
+            if cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
+                break  # the window's ✕ button quits too
     finally:
         dev.stop()
         cv2.destroyAllWindows()
@@ -364,18 +367,18 @@ def run_live(dev, args) -> None:
         f"speed of sound {speed_of_sound(args.temp):.0f} m/s   step ~{step:.1f} mm",
         "",
     ]
+    if args.scale != 1.0 or args.shift:
+        header.insert(2, f"  calibration: scale ×{args.scale:g}, shift {args.shift:+g} mm")
     if not args.temp_given:
         header.insert(2, "  no temperature given, assuming 20 °C — "
                          "add --temp <°C> if your room differs")
     print("\n".join(header))
-    body_lines = 8
-    print("\n" * body_lines, end="")
+    printed = 0  # lines of the live block currently on screen
 
     dev.start()
     try:
         for m in dev.stream():
-            win.add(echo_to_m(m.echo_time_us, args.temp, args.scale, args.shift / 1000.0)
-                    if m.valid else None)
+            win.add(to_metres(m, args))
             if not win.ready:
                 continue
             st = win.stats(step_m)
@@ -403,9 +406,11 @@ def run_live(dev, args) -> None:
 
             # Move the cursor back up instead of clearing the screen: no flicker,
             # and whatever the reader saw above stays on screen.
-            sys.stdout.write(f"\033[{body_lines}A")
+            if printed:
+                sys.stdout.write(f"\033[{printed}A")
             for line in lines:
                 sys.stdout.write("\033[2K" + line + "\n")
+            printed = len(lines)
             sys.stdout.flush()
     finally:
         dev.stop()
@@ -425,19 +430,24 @@ def run_study(dev, args) -> None:
 
     samples: list[float] = []
     lost = 0
+    attempts = 0
     started = time.monotonic()
     dev.start()
     try:
         for m in dev.stream():
-            if m.valid:
-                samples.append(echo_to_m(m.echo_time_us, args.temp,
-                                         args.scale, args.shift / 1000.0))
-            else:
+            attempts += 1
+            r = to_metres(m, args)
+            if r is None:
                 lost += 1
+            else:
+                samples.append(r)
             if len(samples) >= need:
                 break
-            if len(samples) % 50 == 0 and len(samples):
-                print(f"\r  {len(samples)}/{need}", end="", flush=True)
+            # Progress counts attempts, not successes — with no echo at all the
+            # line still moves and shows WHY: everything is being lost.
+            if attempts % 50 == 0:
+                note = f"   echo lost {lost}" if lost else ""
+                print(f"\r  {len(samples)}/{need}{note}", end="", flush=True)
     finally:
         dev.stop()
     elapsed = time.monotonic() - started
@@ -547,7 +557,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--temp", type=float,
                    help="air temperature, °C (20 by default)")
     p.add_argument("--window", type=int, default=20,
-                   help="how many recent readings to average in live mode")
+                   help="how many recent readings to average")
     p.add_argument("--truth", type=float,
                    help="distance from the tape measure, in metres")
     p.add_argument("--scale", type=float, default=1.0, metavar="X",
