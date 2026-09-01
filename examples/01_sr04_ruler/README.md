@@ -171,6 +171,10 @@ def robust_mean(samples: list[float], step_m: float) -> tuple[float, int]:
 
 The cost is sample size. With only a handful of readings, two or three stray echoes can form the biggest cluster, and a plain average does better. `--study` prints where the cluster becomes reliable: about 50 readings on a clean bench, 100 with the sofa in view.
 
+Animation (on the web page): the ping spreads through the ~50° cone and the nearest echo to return wins. A small box reflects weakly, so most readings still measure the wall — but a few percent report the box instead. Those are the strays: rare, and always nearer than the target.
+
+*Illustration: the ping spreads through the whole ~50° cone and the nearest echo to return wins. A small box reflects weakly, so it does not win every time — most readings still measure the wall, but a few percent report the box instead. Those are the strays: rare, and always nearer than the target.*
+
 ### 3. It is shifted: the speed of sound and the geometry of your bench
 
 Even with a single target and plenty of data, a gap against the tape remains. It has two parts, and telling them apart needs **two** distances:
@@ -214,12 +218,6 @@ All the flags in one place:
 
 Between them, these compensate all three reasons a single ultrasonic reading is wrong: averaging the window melts the 4.3 mm step, the densest cluster throws away stray echoes, and `--scale` with `--shift` let you dial out what no averaging can fix — the scale and offset of your own bench, measured against a tape with `--truth`.
 
-## Limits of the sensor
-
-- **Soft and slanted surfaces do not reflect.** Fabric, foam and curtains swallow the sound; a flat surface tilted by more than about 15° sends the echo away. The tell-tale sign is the "echo lost" line.
-- **Below two centimetres the sensor is blind:** the transducer is still ringing and drowns the echo.
-- **A doorway is a black hole:** the sound leaves and never comes back.
-
 ## Benchmark
 
 One bench, one afternoon (21 Aug 2026, room at 30 °C): the HC-SR04 USB lying on a desk, aimed at a flat patch of wall, a sofa at the foot of that wall, ~50 readings per second. Every distance was measured with a tape from the front rim of the transducer cylinders to the wall, good to ±2–3 mm. All the numbers in this article come from these setups:
@@ -246,7 +244,24 @@ One bench, one afternoon (21 Aug 2026, room at 30 °C): the HC-SR04 USB lying on
 | **Against a tape** | 2.3 % short with the default air temperature; with `--temp 30` a constant −10 mm remains — bench geometry, not the sensor |
 | **Readings needed** | about 50 on a clean bench, 100 with strong interference |
 
-Next in the series: the same sensor with the opposite requirement — [a parking sensor that has to answer now](https://depz.ai/developers/sensors/example-projects/sr04-parking).
+## Limits of the sensor
+
+- **Soft and slanted surfaces do not reflect.** Fabric, foam and curtains swallow the sound; a flat surface tilted by more than about 15° sends the echo away. The tell-tale sign is the "echo lost" line.
+- **Below two centimetres the sensor is blind:** the transducer is still ringing and drowns the echo.
+- **A doorway is a black hole:** the sound leaves and never comes back.
+
+## A ruler is not a parking sensor
+
+The next project in the series — [a parking sensor](https://depz.ai/developers/sensors/example-projects/sr04-parking) — uses the same sensor for the opposite job, and it is a good way to see that "accurate" means nothing until you say what you are optimising. A ruler trades time for precision; a parking sensor trades precision for time — and almost every design decision in this file flips:
+
+|  | The ruler | A parking sensor |
+|---|---|---|
+| **The goal** | the exact distance | a timely warning |
+| **The answer** | millimetres, arriving seconds late | centimetres, arriving now |
+| **Averaging** | the more the better: 20 readings live, 1000 in `--study` | almost none — at parking speed two seconds of averaging is a metre of travel |
+| **A nearer stray echo** | noise; the densest cluster throws it away | the most important reading of all — the nearest thing is what you brake for |
+| **A lost echo** | harmless: it is counted in the "echo lost N of M" line and the averaging goes on without it | a warning in itself: soft things — a coat, a hedge, snow — swallow sound |
+| **A wrong answer** | every error is equally bad | asymmetric: a false alarm is annoying, a false "all clear" is a dent |
 
 ## The complete code
 
