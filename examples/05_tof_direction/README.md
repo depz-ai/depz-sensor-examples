@@ -1,15 +1,15 @@
-# Lab 5 — In and out: a two-beam counter (VL53L8CH)
+# Example project 5 — In and out: a two-beam counter (VL53L8CH)
 
 **Sensor:** DEPZ ToF VL53L8CH USB (`1bcf:ed40`) · **Time:** 10 minutes
 
-Lab 3 counted people through a doorway with one ultrasonic beam and ended with
+Example project 3 counted people through a doorway with one ultrasonic beam and ended with
 a limitation: one sensor counts *episodes of presence*, not crossings, and it
 cannot tell left from right. Its README says the fix needs two sensors side by
 side — whichever fires first tells you the direction.
 
-This lab keeps that promise with one board. The 8×8 matrix is split into two
+This example project keeps that promise with one board. The 8×8 matrix is split into two
 **virtual beams** — the left four columns and the right four. Each beam is
-nothing more than the presence detector from lab 3, and the counter only
+nothing more than the presence detector from example project 3, and the counter only
 remembers two things per crossing: which beam saw the person first and which
 saw them last.
 
@@ -28,34 +28,34 @@ board mounted so that people cross the field top-to-bottom.
 
 ## Which way is the board pointing?
 
-Nobody can tell from the USB connector: lab 4 found the grid's orientation with
+Nobody can tell from the USB connector: example project 4 found the grid's orientation with
 a hand in the live window, not from the board's markings, and did not record
 how the board was held. So find out the same way — it takes ten seconds:
 
-1. Start the lab, let it learn the background, then wave a hand slowly across
+1. Start the example project, let it learn the background, then wave a hand slowly across
    the doorway the way a person would walk.
 2. Watch the green patch. If it travels **left-to-right** across the columns,
    the default layout is right. If it travels **top-to-bottom**, restart with
    `--vertical`.
-3. Walk through once in the "in" direction. If the lab says **out**, add `--swap`.
+3. Walk through once in the "in" direction. If the example project says **out**, add `--swap`.
 
 Symptom of the wrong layout: nothing ever counts, because the person lights
 both beams at once instead of one after the other.
 
-There is a second lab 5 next door (`05_tof_direction`) that tracks the centre
-of the person across all eight columns. That one sees more; this one is
-simpler to reason about and to debug, and it is the one to read first.
+A fuller version would track the centre of the person across all eight
+columns. That one sees more; this one is simpler to reason about and to debug,
+and it is the one to build first.
 
 ## Run
 
 ```bash
-.venv/bin/python labs/05_tof_direction_f/lab5_tof.py               # live window
-.venv/bin/python labs/05_tof_direction_f/lab5_tof.py --swap        # in/out backwards?
-.venv/bin/python labs/05_tof_direction_f/lab5_tof.py --vertical    # people cross top-to-bottom
-.venv/bin/python labs/05_tof_direction_f/lab5_tof.py --terminal    # text, for ssh
+.venv/bin/python examples/05_tof_direction/tof_direction.py               # live window
+.venv/bin/python examples/05_tof_direction/tof_direction.py --swap        # in/out backwards?
+.venv/bin/python examples/05_tof_direction/tof_direction.py --vertical    # people cross top-to-bottom
+.venv/bin/python examples/05_tof_direction/tof_direction.py --terminal    # text, for ssh
 ```
 
-The lab spends the first three seconds (`--background`) learning the empty
+The example project spends the first three seconds (`--background`) learning the empty
 doorway — stand clear. Then walk through.
 
 ![window](img/window.png)
@@ -81,13 +81,13 @@ Every constant in the file exists because the bench demanded it:
   it switched on and off, and the crossing is read as *first on* → *last off*.
 - **Runners get a second opinion.** At 15 fps a runner crosses the field in
   six to eight frames and often lights both beams in the same frame — no
-  "first". Walking counted fine, running had gaps. So the lab also remembers
+  "first". Walking counted fine, running had gaps. So the example project also remembers
   where across the field the covered cells sat in the first and the last frame
   of the crossing; when the beams cannot say, a move of ≥ 3 lines
   (`MIN_TRAVEL_LINES`) decides the direction instead.
 - **Hysteresis in cells.** A beam switches on at 5 covered cells (of 24) and off
-  only below 2 — the lab 3 trick, so a shoulder on the beam's edge does not chatter.
-- **300 ms release**, from lab 3's measurement of in-crossing flicker (40–160 ms)
+  only below 2 — the example project 3 trick, so a shoulder on the beam's edge does not chatter.
+- **300 ms release**, from example project 3's measurement of in-crossing flicker (40–160 ms)
   against real gaps (seconds).
 - **No gap between the beams, and 0.8 s of quiet before a crossing closes.**
   The first version kept columns 3–4 as a gap and closed the crossing the
@@ -111,4 +111,4 @@ Every constant in the file exists because the bench demanded it:
   reliably, in both directions. Running is **not verified yet** — before the
   centre-of-patch fallback a run could cross the whole field between two
   frames and be missed, and that fallback has not been re-tested on real runs
-  since. Treat this lab as sound at walking pace and unproven above it.
+  since. Treat this example project as sound at walking pace and unproven above it.

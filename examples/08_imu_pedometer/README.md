@@ -1,15 +1,15 @@
-# Lab 8. A pedometer
+# Example project 8. A pedometer
 
 **Sensor:** BNO086 IMU
 **What you get:** a step counter you can check with your own feet — and the
 point where a simple algorithm stops being enough, measured rather than
 asserted.
 
-![The lab window: two counts and the acceleration they came from](img/window.png)
+![The example project window: two counts and the acceleration they came from](img/window.png)
 
-*What the lab shows when you run it. The trace is linear acceleration, the
+*What the example project shows when you run it. The trace is linear acceleration, the
 horizontal line is the threshold, the marks along the bottom are accepted
-steps. On the left, the lab's own count; beside it, what the chip's built-in
+steps. On the left, the example project's own count; beside it, what the chip's built-in
 pedometer made of the same walk.*
 
 ## Why
@@ -19,8 +19,8 @@ about a tenth of a second everything you are carrying is thrown upward. The
 sensor feels that as a spike, and counting steps is counting spikes.
 
 That is one line of code, and it does not work. Two things get in the way, and
-the lab is about both — plus a third thing that only shows up when you check
-against your own feet, which is the reason this lab exists at the end of the
+the example project is about both — plus a third thing that only shows up when you check
+against your own feet, which is the reason this example project exists at the end of the
 IMU series rather than the start.
 
 ## Where you carry it matters more than any parameter
@@ -63,7 +63,7 @@ a spike is not a step.
 because one step makes more than one spike. The heel lands, the foot rolls, the
 other leg swings through. Counting every peak counts far too many.
 
-It also sets a hard ceiling on the walk the lab can follow: 400 ms of deafness
+It also sets a hard ceiling on the walk the example project can follow: 400 ms of deafness
 means at most 150 steps a minute. That is a real limit, not a safety margin,
 and the window prints it.
 
@@ -76,7 +76,7 @@ one walk costs a person getting up, so it should answer the whole question.
 
 Four walks, the same settings throughout (3.0 m/s², 400 ms):
 
-| walk | cadence | steps taken | this lab | the chip |
+| walk | cadence | steps taken | this example project | the chip |
 |---|---|---|---|---|
 | 1 | ~80/min | 20 | 22 | 16 |
 | 2 | 64/min | 20 | 23 | 16 |
@@ -85,14 +85,14 @@ Four walks, the same settings throughout (3.0 m/s², 400 ms):
 
 Two different failures, in opposite directions.
 
-**This lab always overcounts**, by 2 to 15%. Extra peaks inside a single
+**This example project always overcounts**, by 2 to 15%. Extra peaks inside a single
 footfall get through, and the faster the walk, the more of them there are.
 
 **The chip undercounts on a slow walk** — 16 for 20, three times running — and
 is nearly perfect on a normal one, 40 out of 40. Part of that is its warm-up:
 on the first bench walk it reported nothing for the first three seconds and
 then jumped straight to 2. It waits to be convinced that a rhythm is a walk,
-and pays for the certainty with the first few steps. This lab counts from the
+and pays for the certainty with the first few steps. This example project counts from the
 first footfall and pays for that with false positives.
 
 Neither is wrong. They answer slightly different questions, and which one you
@@ -106,11 +106,11 @@ using walks 1 and 3**, which then appear in the table as results. The chip
 tuned nothing.
 
 The one genuinely blind test is walk 4, the only one recorded after the
-settings were fixed. There the chip counted 40 of 40 and this lab counted 41.
+settings were fixed. There the chip counted 40 of 40 and this example project counted 41.
 
 The honest summary is that they split by pace: on a slow, shuffling walk we
 win, because the chip's warm-up costs it four steps out of twenty; at a normal
-pace the chip wins. What this lab has over the chip is not accuracy. It is that
+pace the chip wins. What this example project has over the chip is not accuracy. It is that
 every decision in it is visible and adjustable, and you can watch exactly which
 spike became a step.
 
@@ -144,20 +144,20 @@ trap.
 And this is exactly why the chip's own pedometer is not two lines of code. A
 real one tracks the rhythm and adapts its window to it, which is what lets it
 score 40 out of 40 at one pace and 29 out of 30 at another. That is the honest
-end of this lab: the simple version is worth building, because building it is
+end of this example project: the simple version is worth building, because building it is
 what shows you what the complicated version is for.
 
 ## Run it
 
 ```bash
-.venv/bin/python labs/08_imu_pedometer/lab8_imu.py                # live count in a window
-.venv/bin/python labs/08_imu_pedometer/lab8_imu.py --check 20     # walk 20, see who was right
-.venv/bin/python labs/08_imu_pedometer/lab8_imu.py --threshold 4  # reject weaker spikes
-.venv/bin/python labs/08_imu_pedometer/lab8_imu.py --terminal     # text output, for ssh
+.venv/bin/python examples/08_imu_pedometer/imu_pedometer.py                # live count in a window
+.venv/bin/python examples/08_imu_pedometer/imu_pedometer.py --check 20     # walk 20, see who was right
+.venv/bin/python examples/08_imu_pedometer/imu_pedometer.py --threshold 4  # reject weaker spikes
+.venv/bin/python examples/08_imu_pedometer/imu_pedometer.py --terminal     # text output, for ssh
 ```
 
 In the window, **R** resets both counters and **Q** quits. The chip's counter
-cannot actually be zeroed, so the lab remembers where it was and subtracts —
+cannot actually be zeroed, so the example project remembers where it was and subtracts —
 the same trick as the trip meter in a car.
 
 Carry the board in a pocket or held against your thigh. Not in a hand: see the

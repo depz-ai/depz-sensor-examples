@@ -1,19 +1,19 @@
-# Lab 2. Parking sensor
+# Example project 2. Parking sensor
 
 **Sensor:** HC-SR04 ultrasonic
 **What you get:** an approach bar and a beep that speeds up as an object closes
 in, the way a car does it. And an understanding of why the recipes from
-[lab 1](../01_sr04_ruler/) must not be used here.
+[example project 1](../01_sr04_ruler/) must not be used here.
 
 ## Why
 
-Lab 1 chased accuracy: the more readings you average, the honester the
+Example project 1 chased accuracy: the more readings you average, the honester the
 millimetres. Averaging 100 readings takes five seconds — fine for a ruler, the
 wall is not going anywhere.
 
 A parking sensor cannot work like that. Five seconds to answer is a car that has
 travelled a metre past the point where it should have beeped. What matters here
-is not accuracy but **being in time**. This lab is about where that line runs
+is not accuracy but **being in time**. This example project is about where that line runs
 and what it costs to cross it.
 
 ## About the sound
@@ -22,13 +22,13 @@ The first version beeped with the terminal bell — the `\a` from every textbook
 On real Ubuntu it turned out to be mute: both GNOME and PyCharm silence it by
 default.
 
-So the lab synthesises the sound itself: a 2200 Hz sine wave handed to `paplay`,
+So the example project synthesises the sound itself: a 2200 Hz sine wave handed to `paplay`,
 which ships with Ubuntu. Nothing to install.
 
 One detail worth opening the code for. The player starts **once for the whole
-lab**, not once per beep: the red zone fires sixteen beeps a second while
+example project**, not once per beep: the red zone fires sixteen beeps a second while
 starting a process takes tens of milliseconds — the sensor would choke. Instead
-the lab keeps one open audio stream and pours into it, a tone or silence, for
+the example project keeps one open audio stream and pours into it, a tone or silence, for
 exactly as many milliseconds as real time has passed.
 
 The second detail is the edges of a beep. Cut a sine wave off abruptly and you
@@ -51,7 +51,7 @@ is exactly the speed of approach.
 
 ## Why a median of three, not a mean of twenty
 
-From lab 1 we know the sensor sometimes answers about a stray object, and such a
+From example project 1 we know the sensor sometimes answers about a stray object, and such a
 miss is always **nearer** than the target. For a ruler you fix that by
 collecting statistics. For a parking sensor you cannot — there is no time.
 
@@ -68,7 +68,7 @@ would drag it down and the sensor would scream at empty space. The median
 ignores that miss.
 
 Smoothing is adjustable: `--smooth 1` turns it off entirely (watch the false
-alarms appear), `--smooth 9` makes the readings glassy but visibly late. The lab
+alarms appear), `--smooth 9` makes the readings glassy but visibly late. The example project
 prints the lag itself.
 
 ## The sensor has no "target"
@@ -88,7 +88,7 @@ A real car parking sensor behaves the same way, and rightly so: you cannot
 ignore a pillar. But you have to know about it, or it looks like the sensor is
 lying.
 
-The lab flags these swaps: a jump of more than 0.3 m between two readings is
+The example project flags these swaps: a jump of more than 0.3 m between two readings is
 marked "target changed" and counted. Thirty centimetres in 20 ms would be 15 m/s
 — objects do not move like that, so the object changed.
 
@@ -112,13 +112,13 @@ target at 1.5 m:
 | 20 ms | 50 fps |
 | 10 ms | 79 fps |
 
-The lab asks for 20 ms and gets its 50 frames a second — four times faster than
-lab 1 at factory settings.
+The example project asks for 20 ms and gets its 50 frames a second — four times faster than
+example project 1 at factory settings.
 
 ## Running it
 
 ```bash
-.venv/bin/python labs/02_sr04_parking/lab2_sr04.py
+.venv/bin/python examples/02_sr04_parking/sr04_parking.py
 ```
 
 `Ctrl+C` to quit. Useful flags:
@@ -161,7 +161,7 @@ lab 1 at factory settings.
   all: one frame showed the wall at 1.3 m, the next a palm at 0.3 m. A jump of
   825 mm in 20 ms would be 41 m/s, which does not happen. A flat palm held at an
   angle sends the echo sideways and is nearly invisible to ultrasound — the same
-  effect as slanted surfaces in lab 1;
+  effect as slanted surfaces in example project 1;
 - **sound:** the terminal bell (`\a`) was silent on this machine, in GNOME and
   in PyCharm alike. The synthesised tone through `paplay` is audible. If it is
   quiet, check which device the audio goes to — on the built-in card the output

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lab 6 — A spirit level (BNO086 IMU).
+"""Example project 6 — A spirit level (BNO086 IMU).
 
 The first sensor in this series measured distance, the second measured 64
 distances at once. This one measures nothing you can put a tape on: it reports
@@ -11,12 +11,12 @@ help. Gravity always points the same way, it is always there, and the
 accelerometer feels it as an acceleration of about 9.8 m/s² pointing up — the
 push of the table holding the board against the fall. Tip the board and that
 vector swings in the board's own axes. The angle it swings through is the tilt.
-No calibration, no magnetometer, no quaternion — those start in Lab 7.
+No calibration, no magnetometer, no quaternion — those start in example project 7.
 
-Two things bite here, and this lab is about both.
+Two things bite here, and this example project is about both.
 
 The first is that the board does not know what "level" means. It knows where
-down is; whether your table is horizontal is not its business. So the lab
+down is; whether your table is horizontal is not its business. So the example project
 starts by measuring the board's own axes and lets you press Z to declare the
 current pose flat — the same thing you do when you rest a real spirit level on
 a surface and read what it says.
@@ -30,12 +30,12 @@ why the zeroed reading is the one to trust — and why --raw is worth a look
 first, so you can see what you are being saved from.
 
 Run:
-    python labs/06_imu_level/lab6_imu.py                 live bubble in a window
-    python labs/06_imu_level/lab6_imu.py --range 5       finer scale, +/-5 degrees
-    python labs/06_imu_level/lab6_imu.py --zero          start already zeroed
-    python labs/06_imu_level/lab6_imu.py --check         average one pose, print it
-    python labs/06_imu_level/lab6_imu.py --check --truth 3.8    against a known wedge
-    python labs/06_imu_level/lab6_imu.py --terminal      text output, for ssh
+    python examples/06_imu_level/imu_level.py                 live bubble in a window
+    python examples/06_imu_level/imu_level.py --range 5       finer scale, +/-5 degrees
+    python examples/06_imu_level/imu_level.py --zero          start already zeroed
+    python examples/06_imu_level/imu_level.py --check         average one pose, print it
+    python examples/06_imu_level/imu_level.py --check --truth 3.8    against a known wedge
+    python examples/06_imu_level/imu_level.py --terminal      text output, for ssh
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/06_imu_level/lab6_imu.py\n"
+        "    .venv/bin/python examples/06_imu_level/imu_level.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -71,11 +71,11 @@ REPORT_HZ = 50
 
 # Standard gravity. Not a reading and not a constant of this board — it is what
 # the length of the vector is supposed to be, and comparing against it is how
-# the lab shows the accelerometer's offset.
+# the example project shows the accelerometer's offset.
 G_STANDARD = 9.807
 
 # The board's axes, measured on the bench rather than read off a datasheet —
-# the ToF matrix in Lab 4 arrived rotated a quarter turn, so nothing here is
+# the ToF matrix in example project 4 arrived rotated a quarter turn, so nothing here is
 # taken on trust. Board flat on the table, chip up, USB cable towards you:
 #
 #   lifting the FAR edge   grew +Y   ->  +Y points away from you
@@ -93,7 +93,7 @@ AXIS_UP = np.array([0.0, 0.0, 1.0])
 # measured afterwards.
 BUFFER = REPORT_HZ // 2
 
-# Below this the lab calls the surface level and paints the bubble green. It is
+# Below this the example project calls the surface level and paints the bubble green. It is
 # a decision, not a measurement: a builder's level is graded around 0.5 mm/m,
 # which is 0.03 degrees, and this sensor cannot see that. 0.20 is a little
 # above the noise measured on the bench, so a still board reads LEVEL steadily
@@ -109,7 +109,7 @@ COL_TEXT = (60, 55, 50)
 COL_DIM = (150, 145, 140)
 COL_EYE = (236, 234, 229)
 COL_RING = (206, 203, 197)
-COL_BUBBLE = (65, 69, 214)      # off level: the warm end of the Lab 4 ramp
+COL_BUBBLE = (65, 69, 214)      # off level: the warm end of the example project 4 ramp
 COL_LEVEL = (130, 170, 86)      # within LEVEL_DEG: the calm end
 COL_CROSS = (186, 183, 177)
 
@@ -120,7 +120,7 @@ def unit(v: np.ndarray) -> np.ndarray:
 
 
 class Level:
-    """The whole lab: a gravity vector in, two angles and a bubble out.
+    """The whole example project: a gravity vector in, two angles and a bubble out.
 
     Everything is measured against a reference direction — the one the level
     calls "up". Unzeroed that is the board's own +Z, so the reading is the tilt
@@ -201,7 +201,7 @@ class Level:
         """Spread of the recent samples, as an angle.
 
         How much the reading wanders while nothing moves — the same kind of
-        number as the 4.3 mm cell noise Lab 4 measured, and the reason
+        number as the 4.3 mm cell noise example project 4 measured, and the reason
         LEVEL_DEG is not set tighter.
         """
         if len(self.recent) < 4:
@@ -228,7 +228,7 @@ def draw_level(pitch: float, roll: float, tilt: float, span: float,
     """Render one frame of the level.
 
     Kept separate from the loop so a screenshot for the README can be produced
-    headless — same pixels the lab draws, no window popping up.
+    headless — same pixels the example project draws, no window popping up.
     """
     # OpenCV ships a Qt build with no fonts of its own, so Qt prints a font
     # warning on every start. Nothing here depends on Qt fonts — every label in
@@ -243,7 +243,7 @@ def draw_level(pitch: float, roll: float, tilt: float, span: float,
     font = cv2.FONT_HERSHEY_SIMPLEX
     level = tilt < LEVEL_DEG
 
-    cv2.putText(img, "DEPZ - Lab 6 - Spirit level", (40, 44),
+    cv2.putText(img, "DEPZ - Example project 6 - Spirit level", (40, 44),
                 font, 0.72, COL_TEXT, 1, cv2.LINE_AA)
     cv2.putText(img, status, (40, 72), font, 0.46, COL_DIM, 1, cv2.LINE_AA)
 
@@ -321,7 +321,7 @@ def run_window(dev, args) -> None:
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2
 
-    title = "DEPZ Lab 6 - spirit level"
+    title = "DEPZ Example project 6 - spirit level"
     level = Level()
     pending_zero = args.zero
     last_draw = 0.0
@@ -403,7 +403,7 @@ def run_terminal(dev, args) -> None:
 def wait_for(prompt: str) -> bool:
     """Wait for Enter. False when there is nobody to ask — piped input, cron.
 
-    The first version of this lab's bench work used a countdown instead, and it
+    The first version of this example project's bench work used a countdown instead, and it
     failed the way countdowns do: the reading was taken before the board was in
     place, and nothing on screen said so. A person pressing Enter when ready
     cannot be rushed.
@@ -439,7 +439,7 @@ def run_check(dev, args) -> None:
     This is the mode the README's numbers come from. Rest the board on a
     straight plank, prop one end up by a known amount, and the angle follows
     from a right triangle: the rise over the length of the plank is the sine of
-    the tilt. With --zero the lab asks for the flat pose first, because an
+    the tilt. With --zero the example project asks for the flat pose first, because an
     angle has to be measured from somewhere.
     """
     level = Level()
@@ -493,7 +493,7 @@ def has_display() -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Lab 6: a spirit level on a BNO086 IMU")
+        description="Example project 6: a spirit level on a BNO086 IMU")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--terminal", action="store_true",
                    help="text readout instead of the window (for ssh)")
@@ -532,7 +532,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Gravity is a fused output: the chip separates the steady pull from
         # whatever else is shaking the board and reports each one apart. Asking
-        # for it costs one line, and unlike the quaternion of Lab 7 it is
+        # for it costs one line, and unlike the quaternion of example project 7 it is
         # trustworthy from the first report — nothing here needs calibrating.
         dev.enable_gravity(hz=REPORT_HZ)
 

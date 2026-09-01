@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Lab 7 — Orientation in space (BNO086 IMU).
+"""Example project 7 — Orientation in space (BNO086 IMU).
 
-Lab 6 asked the sensor one question — where is down — and got an answer that
-was trustworthy from the first report. This lab asks the whole question: how is
+Example project 6 asked the sensor one question — where is down — and got an answer that
+was trustworthy from the first report. This example project asks the whole question: how is
 the board turned, in all three directions at once. The answer arrives as a
 quaternion, and the quaternion is where the trouble starts.
 
@@ -12,10 +12,10 @@ Switch the board on and the rotation vector immediately reports four tidy
 numbers. Nothing blinks, nothing complains. Ask the chip how sure it is and it
 says its heading could be out by **180 degrees** — it does not know which way
 you are pointing at all, and it will keep saying so, politely, in a field most
-people never read. That field is the subject of this lab as much as the
+people never read. That field is the subject of this example project as much as the
 quaternion is.
 
-The other half of the lab is what a quaternion turns into. Roll, pitch and yaw
+The other half of the example project is what a quaternion turns into. Roll, pitch and yaw
 are what people actually want, and converting is four lines of trigonometry —
 but those three numbers have a hole in them. Stand the board on its edge and
 they blow up while the quaternion sails on unbothered. You can watch it happen
@@ -23,11 +23,11 @@ in the window: the board on screen keeps turning smoothly, and the numbers next
 to it go mad.
 
 Run:
-    python labs/07_imu_orientation/lab7_imu.py              live board in a window
-    python labs/07_imu_orientation/lab7_imu.py --game       ignore the compass
-    python labs/07_imu_orientation/lab7_imu.py --calibrate   walk through calibration
-    python labs/07_imu_orientation/lab7_imu.py --drift 120   leave it still, measure the drift
-    python labs/07_imu_orientation/lab7_imu.py --terminal    text output, for ssh
+    python examples/07_imu_orientation/imu_orientation.py              live board in a window
+    python examples/07_imu_orientation/imu_orientation.py --game       ignore the compass
+    python examples/07_imu_orientation/imu_orientation.py --calibrate   walk through calibration
+    python examples/07_imu_orientation/imu_orientation.py --drift 120   leave it still, measure the drift
+    python examples/07_imu_orientation/imu_orientation.py --terminal    text output, for ssh
 """
 
 from __future__ import annotations
@@ -51,14 +51,14 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/07_imu_orientation/lab7_imu.py\n"
+        "    .venv/bin/python examples/07_imu_orientation/imu_orientation.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
 
 REPORT_HZ = 50
 
-# Two quaternions, and the difference between them is the lab's second lesson.
+# Two quaternions, and the difference between them is the example project's second lesson.
 #
 # ROTATION_VECTOR uses the magnetometer, so its yaw is measured from magnetic
 # north — an angle that means something to the outside world, and that the chip
@@ -76,11 +76,11 @@ GAME = SensorId.GAME_ROTATION_VECTOR
 GIMBAL_WARN_DEG = 75.0
 
 # Tilt change that means somebody touched the board during a drift run. Well
-# above the 0.08° of noise Lab 6 measured, well below any real nudge.
+# above the 0.08° of noise example project 6 measured, well below any real nudge.
 MOVED_DEG = 1.0
 
 # The board, in its own axes, as a box to draw: +X right, +Y away from you,
-# +Z up, exactly as measured in Lab 6. Half-sizes, in units where the board's
+# +Z up, exactly as measured in example project 6. Half-sizes, in units where the board's
 # long side is 1.
 BOARD = (0.50, 0.34, 0.045)
 USB_HALF = (0.16, 0.05, 0.055)   # the connector, drawn on the -Y edge
@@ -112,7 +112,7 @@ def ypr_deg(q) -> tuple[float, float, float]:
 
     Three turns applied in order — yaw about the vertical, then pitch, then
     roll — which is the convention everything from aircraft to phone APIs uses.
-    The middle one is an arcsine, and that is where the trouble in this lab
+    The middle one is an arcsine, and that is where the trouble in this example project
     comes from: an arcsine has nowhere to go past ±90°.
     """
     x, y, z, w = q
@@ -244,7 +244,7 @@ def draw_window(state: dict, args) -> None:
     yaw, pitch, roll = ypr_deg(q)
     locked = abs(pitch) > GIMBAL_WARN_DEG
 
-    cv2.putText(img, "DEPZ - Lab 7 - Orientation in space", (40, 44),
+    cv2.putText(img, "DEPZ - Example project 7 - Orientation in space", (40, 44),
                 font, 0.72, COL_TEXT, 1, cv2.LINE_AA)
     cv2.putText(img, "game rotation vector — no compass, yaw is relative to the start"
                 if using_game else
@@ -359,7 +359,7 @@ def run_window(dev, args) -> None:
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2
 
-    title = "DEPZ Lab 7 - orientation"
+    title = "DEPZ Example project 7 - orientation"
     state = new_state()
     last_draw = 0.0
     for _rep in pump(dev, state, (FUSED, GAME)):
@@ -386,7 +386,7 @@ def run_window(dev, args) -> None:
                           "compass vector — yaw from magnetic north")
         if key == ord("t"):
             # The chip's own zeroing: it remembers this pose and reports every
-            # later one relative to it. Unlike Lab 6's Z key this happens on
+            # later one relative to it. Unlike example project 6's Z key this happens on
             # the sensor, and persist_tare() would keep it across a power cycle.
             dev.tare_now()
             state["tared"] = True
@@ -478,7 +478,7 @@ def run_calibrate(dev, args) -> None:
     if state["fused_acc"] >= 2:
         print("\nSaving that into the chip so the next power-up starts better.")
         dev.save_dcd()
-        print("saved — run the lab again and watch the opening heading estimate")
+        print("saved — run the example project again and watch the opening heading estimate")
     else:
         print("\nAccuracy never reached 2, so there is nothing worth saving. "
               "Try again away from the desk: monitors, speakers and laptop "
@@ -641,10 +641,10 @@ def run_two_poses(dev, args) -> None:
     One command for both bench checks. Turn the board against a right angle and
     the yaw change should be 90°; prop it on a wedge of known geometry and the
     tilt change should be the wedge's own angle — the same arcsine of rise over
-    length that Lab 6 was verified with.
+    length that example project 6 was verified with.
     """
     state = new_state()
-    print("Set up the first pose and let go. Nothing to press — the lab takes "
+    print("Set up the first pose and let go. Nothing to press — the example project takes "
           "the reading\nwhen the board stops moving, and again after you have "
           "moved it.\n")
     # One subscription to the report stream, read from start to finish. A fresh
@@ -689,7 +689,7 @@ def has_display() -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Lab 7: orientation from the BNO086's quaternion")
+        description="Example project 7: orientation from the BNO086's quaternion")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--terminal", action="store_true",
                    help="text readout instead of the window (for ssh)")
@@ -722,7 +722,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         # Both vectors at once. They cost nothing to run together and the
-        # difference between them is half of what this lab has to show.
+        # difference between them is half of what this example project has to show.
         dev.enable_rotation_vector(hz=REPORT_HZ)
         dev.enable_game_rotation_vector(hz=REPORT_HZ)
 

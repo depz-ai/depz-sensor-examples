@@ -1,4 +1,4 @@
-# Lab 1. An honest ruler
+# Example project 1. An honest ruler
 
 **Sensor:** HC-SR04 ultrasonic
 **What you get:** a distance that agrees with a tape measure, and a clear idea
@@ -8,7 +8,7 @@ of how many readings that takes — and when the sensor cannot be trusted at all
 
 *Ten seconds of a sensor pointed at a wall 0.530 m away. The pale comb is the
 raw readings — the same thing the DEPZ viewer shows. The green line is this
-lab's answer: averaged with outliers dropped. Same sensor, same moment: the comb
+example project's answer: averaged with outliers dropped. Same sensor, same moment: the comb
 covers 12.9 mm — three resolution steps — while the answer holds the dashed line
 of the measured distance to within 0.1 mm.*
 
@@ -16,7 +16,7 @@ of the measured distance to within 0.1 mm.*
 
 An ultrasonic sensor looks simple: send a click, wait for the echo, halve it. In
 practice a single reading is almost always wrong, and wrong for three different
-reasons at once. This lab takes them apart one at a time and ends with a number
+reasons at once. This example project takes them apart one at a time and ends with a number
 you can check yourself.
 
 ## How the sensor measures
@@ -65,14 +65,14 @@ to 1.55 m brought a sofa at the foot of the wall into the lower edge of the
 cone: strays jumped to 70 %, smeared from 0.8 m to 1.5 m. The wall kept giving
 its own narrow peak throughout.
 
-That is why the lab takes its answer from the **densest cluster, not the
+That is why the example project takes its answer from the **densest cluster, not the
 median**. The target alone reflects consistently and forms a narrow peak, while
 a sofa, a desk grazed edge-on or a door frame smear out. On the sofa bench the
 median missed by 0.10 m and the plain average by 0.13 m; the cluster gave the
 correct 1.515 m.
 
 The price of that rejection is sample size. On a short block the densest cluster
-can settle on a stray reflection, and then it loses to a plain average. The lab
+can settle on a stray reflection, and then it loses to a plain average. The example project
 prints the point where it becomes reliable: about 50 readings on a clean bench,
 100 with the sofa in view.
 
@@ -93,7 +93,7 @@ only the scale is left.
 
 **Measured on the bench** (21 Aug 2026, room at 30 °C):
 
-| tape | lab at `--temp 20` | error | lab at `--temp 30` | error |
+| tape | example project at `--temp 20` | error | example project at `--temp 30` | error |
 |---|---|---|---|---|
 | 1.050 m | 1.020 m | −29.9 mm | 1.039 m | −10.6 mm |
 | 1.550 m | 1.516 m | −34.4 mm | 1.541 m | −9.3 mm |
@@ -116,7 +116,7 @@ settle it properly.
 ## Running it
 
 ```bash
-.venv/bin/python labs/01_sr04_ruler/lab1_sr04.py --temp 30
+.venv/bin/python examples/01_sr04_ruler/sr04_ruler.py --temp 30
 ```
 
 Live reading: the single value, the answer with outliers dropped, the plain
@@ -126,7 +126,7 @@ missing echoes. `Ctrl+C` to quit.
 A window with a time plot instead of the terminal:
 
 ```bash
-.venv/bin/python labs/01_sr04_ruler/lab1_sr04.py --temp 30 --plot
+.venv/bin/python examples/01_sr04_ruler/sr04_ruler.py --temp 30 --plot
 ```
 
 Three things are drawn at once: the raw readings as a pale comb, the answer as a
@@ -151,13 +151,13 @@ The terminal modes work without OpenCV; only `--plot` needs it.
 Compare against a tape measure (metres):
 
 ```bash
-.venv/bin/python labs/01_sr04_ruler/lab1_sr04.py --temp 30 --truth 1.550
+.venv/bin/python examples/01_sr04_ruler/sr04_ruler.py --temp 30 --truth 1.550
 ```
 
 How much averaging you need:
 
 ```bash
-.venv/bin/python labs/01_sr04_ruler/lab1_sr04.py --temp 30 --study
+.venv/bin/python examples/01_sr04_ruler/sr04_ruler.py --temp 30 --study
 ```
 
 Collects a sample set (hold the sensor still), draws a histogram — the steps and

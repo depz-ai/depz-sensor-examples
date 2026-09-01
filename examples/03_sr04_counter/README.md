@@ -1,4 +1,4 @@
-# Lab 3. Counting crossings
+# Example project 3. Counting crossings
 
 **Sensor:** HC-SR04 ultrasonic
 **What you get:** a counter that reports how many times something crossed the
@@ -8,7 +8,7 @@ beam — and a clear idea of what such a counter can and cannot know.
 
 *Twenty seconds at 50 readings per second. The flat line is the background — a
 board 1.17 m away. Each dip is a person crossing the beam; the red marks are the
-crossings the lab counted. The pale band between the two dashed lines is the
+crossings the example project counted. The pale band between the two dashed lines is the
 hysteresis. Four crossings walked, four counted, nothing rejected.*
 
 ## Why
@@ -39,7 +39,7 @@ Nothing in between. So a crossing ends only after the view has been clear for
 
 ## Problem two: a stray echo looks exactly like a person
 
-Lab 1 measured this: a stray echo is always **nearer** than the real target,
+Example project 1 measured this: a stray echo is always **nearer** than the real target,
 6–9 % of readings on a clean bench and up to 70 % with a sofa in the cone. A
 single stray reading crossing the threshold is indistinguishable from someone
 walking past.
@@ -58,10 +58,10 @@ that land well in front of the real background. With a background of 1.60 m the
 empty scene produced strays down to **1.26 m** with nobody in the room. Set the
 threshold above that line and the door frame gets counted as a person, forever.
 
-So the lab measures two numbers during the background phase: the background
+So the example project measures two numbers during the background phase: the background
 itself (from the densest cluster) and the **nearest stray** the empty scene
 produced. The detection zone ends below the stray line, whatever the fraction
-says, and the lab prints which of the two limits won.
+says, and the example project prints which of the two limits won.
 
 The consequence is worth stating plainly: **whoever passes beyond the zone is
 not seen at all.** On the doorway bench the zone was 0.87–1.18 m against a
@@ -104,7 +104,7 @@ clutter; a narrow one is clean but has to be aimed exactly.
 ## Running it
 
 ```bash
-.venv/bin/python labs/03_sr04_counter/lab3_sr04.py --temp 30
+.venv/bin/python examples/03_sr04_counter/sr04_counter.py --temp 30
 ```
 
 Three seconds of countdown to step out of the beam, two seconds of background
@@ -138,7 +138,7 @@ Everything above boils down to three rules:
 Bench of 21 Aug 2026 (photo above): sensor on a stand at one side of a passage,
 a flat chipboard panel on the other, 1.170 m apart by tape.
 
-- **background:** the lab measured **1.164 m** against 1.170 m by tape — 6 mm,
+- **background:** the example project measured **1.164 m** against 1.170 m by tape — 6 mm,
   inside the tape's own accuracy;
 - **counting:** 4 crossings walked, **4 counted, 0 rejected, 0 false** — with
   2251 background readings in the same run and not one of them mistaken for a

@@ -1,12 +1,12 @@
-# Lab 4. The first depth map
+# Example project 4. The first depth map
 
 **Sensor:** VL53L8CH time-of-flight matrix
 **What you get:** 64 distances at once — and the three facts that decide whether
 those distances mean anything at all.
 
-![The lab window: measured tiles on the left, smoothed picture on the right](img/window.png)
+![The example project window: measured tiles on the left, smoothed picture on the right](img/window.png)
 
-*What the lab shows when you run it. A hand held 0.38 m in front of the sensor,
+*What the example project shows when you run it. A hand held 0.38 m in front of the sensor,
 a wall an even metre behind it. Left: the 64 measurements, holes left as holes.
 Right: the same 64 numbers smoothed into a picture, with the crosshair reading
 underneath.*
@@ -52,7 +52,7 @@ those cells turn out to hold `0.000`, `0.002` and `-0.007`, and the colour scale
 paints them **nearer than the actual hand**. That is what an unfiltered depth map
 looks like.*
 
-This lab paints only 5 and 9. Status 10 is a real range too, but it is the first
+This example project paints only 5 and 9. Status 10 is a real range too, but it is the first
 sighting of something that was not there a frame ago, and on a live map that is
 exactly the flicker you do not want painted. `--raw` turns the filter off, which
 is the fastest way to see why it exists.
@@ -135,7 +135,7 @@ That matters more than it sounds. If each cell reported the distance along its
 own slanted line of sight, a wall that really is flat would arrive as a bowl:
 the corner cell has to look 1/cos 27° = **12 % farther** to reach the same wall.
 At a metre that is twelve centimetres — impossible to miss, and impossible to
-ignore when the next labs start comparing cells against each other.
+ignore when the next example projects start comparing cells against each other.
 
 `--flat` measures it. Zones are grouped into rings by how far off-axis they sit,
 and each ring is averaged — a sensor not perfectly square to the wall lifts one
@@ -205,23 +205,23 @@ chair are not drawing better — they have a hundred points across where this on
 has eight.
 
 What this sensor is good at is the other question: not what shape is there, but
-**how far away it is**, 64 times at once, to a few millimetres. The next labs
+**how far away it is**, 64 times at once, to a few millimetres. The next example projects
 are built on that, not on outlines.
 
 ## Run it
 
 ```bash
-.venv/bin/python labs/04_tof_depth_map/lab4_tof.py                 # live map in a window
-.venv/bin/python labs/04_tof_depth_map/lab4_tof.py --raw           # validity filter off
-.venv/bin/python labs/04_tof_depth_map/lab4_tof.py --truth 1.000   # centre against a tape
-.venv/bin/python labs/04_tof_depth_map/lab4_tof.py --flat          # point at a flat wall
-.venv/bin/python labs/04_tof_depth_map/lab4_tof.py --terminal      # text map, for ssh
+.venv/bin/python examples/04_tof_depth_map/tof_depth_map.py                 # live map in a window
+.venv/bin/python examples/04_tof_depth_map/tof_depth_map.py --raw           # validity filter off
+.venv/bin/python examples/04_tof_depth_map/tof_depth_map.py --truth 1.000   # centre against a tape
+.venv/bin/python examples/04_tof_depth_map/tof_depth_map.py --flat          # point at a flat wall
+.venv/bin/python examples/04_tof_depth_map/tof_depth_map.py --terminal      # text map, for ssh
 ```
 
-The window is the default here, where the ultrasonic labs default to text. Sixty
+The window is the default here, where the ultrasonic example projects default to text. Sixty
 four numbers refreshed fifteen times a second are a picture, and a picture read
 as a table of digits is not read at all. Over ssh there is no window to open, so
-the lab notices and prints the text map instead.
+the example project notices and prints the text map instead.
 
 The first second of every run is silent: the sensor boots with no firmware of
 its own, and ~84 KB of it is pushed over USB before ranging can start.

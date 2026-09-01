@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Lab 3 — Counting people through a doorway (HC-SR04 ultrasonic).
+"""Example project 3 — Counting people through a doorway (HC-SR04 ultrasonic).
 
 The sensor watches a fixed background — a wall, a door frame, the far side of a
 corridor — and counts how many times something came between. No image, no
 machine learning, one number per reading.
 
-Two things make it work, and both come from lab 1:
+Two things make it work, and both come from example project 1:
 
 * a stray echo is always NEARER than the target, and a single stray looks
   exactly like someone walking past. So a crossing has to last several readings
@@ -14,9 +14,9 @@ Two things make it work, and both come from lab 1:
   standing right on it would be counted over and over as the reading wavers.
 
 Run:
-    python labs/03_sr04_counter/lab3_sr04.py                terminal
-    python labs/03_sr04_counter/lab3_sr04.py --plot         window with a time plot
-    python labs/03_sr04_counter/lab3_sr04.py --min-near 60  to count shorter crossings
+    python examples/03_sr04_counter/sr04_counter.py                terminal
+    python examples/03_sr04_counter/sr04_counter.py --plot         window with a time plot
+    python examples/03_sr04_counter/sr04_counter.py --min-near 60  to count shorter crossings
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/03_sr04_counter/lab3_sr04.py\n"
+        "    .venv/bin/python examples/03_sr04_counter/sr04_counter.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -59,7 +59,7 @@ EXIT_FRACTION = 0.85
 # only ends a crossing once it lasts this long.
 RELEASE_S = 0.30
 
-# And a crossing must add up to at least this much time near the sensor. Lab 1
+# And a crossing must add up to at least this much time near the sensor. Example project 1
 # measured 6-9 % stray echoes on a clean bench and 70 % with a sofa in the cone,
 # every one of them nearer than the background — which looks exactly like a
 # person. A stray lasts one reading; a person, hundreds of milliseconds.
@@ -158,7 +158,7 @@ def measure_background(dev, args) -> tuple[float, float, int]:
     """Watch the empty scene. Returns (background, stray line, intruder count).
 
     Two numbers, not one. The background itself comes from the densest cluster —
-    a plain mean would be dragged in by stray echoes, and lab 1 showed those are
+    a plain mean would be dragged in by stray echoes, and example project 1 showed those are
     always nearer, so the background would come out short and every crossing
     would be missed.
 
@@ -170,7 +170,7 @@ def measure_background(dev, args) -> tuple[float, float, int]:
     detection zone ends below it, whatever the fractions say.
     """
     # A countdown, not an instant start: the background must be measured with
-    # nobody in the cone, and whoever launches the lab is usually still standing
+    # nobody in the cone, and whoever launches the example project is usually still standing
     # in it. One stray reading here shrinks the detection zone to nothing.
     for left in range(3, 0, -1):
         print(f"\rStep out of the cone — measuring the background in {left}…",
@@ -283,7 +283,7 @@ def compose_plot(history, counter, events, rate: float):
             cv2.line(frame, a, b, COL_LINE, 2, cv2.LINE_AA)
 
     # The count, large enough to read from across the room — this is the whole
-    # point of the lab, and the tile at the bottom is too small to watch while
+    # point of the example project, and the tile at the bottom is too small to watch while
     # walking through the beam.
     label = str(counter.count)
     (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 3.2, 6)
@@ -394,7 +394,7 @@ def run(dev, args) -> None:
     if args.plot:
         import cv2 as _cv2
         cv2 = _cv2
-        cv2.namedWindow("DEPZ Lab 3 - counting crossings", cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow("DEPZ Example project 3 - counting crossings", cv2.WINDOW_AUTOSIZE)
     else:
         print("\n" * 4, end="")
 
@@ -425,7 +425,7 @@ def run(dev, args) -> None:
             if cv2 is not None:
                 frame = compose_plot(history, counter, events, rate)
                 draw_tiles(frame, tiles_for(counter, value, rate, lost, frames))
-                cv2.imshow("DEPZ Lab 3 - counting crossings", frame)
+                cv2.imshow("DEPZ Example project 3 - counting crossings", frame)
                 if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                     break
             else:
@@ -473,7 +473,7 @@ def run(dev, args) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Lab 3: counting crossings on HC-SR04")
+    p = argparse.ArgumentParser(description="Example project 3: counting crossings on HC-SR04")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--temp", type=float, default=20.0, help="air temperature, °C")
     p.add_argument("--enter", type=float, default=ENTER_FRACTION,

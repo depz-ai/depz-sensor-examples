@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Lab 1 — An honest ruler (HC-SR04 ultrasonic).
+"""Example project 1 — An honest ruler (HC-SR04 ultrasonic).
 
 A single ultrasonic reading is never exact, and it is wrong for three different
-reasons at once. This lab takes them apart one by one and ends with a number you
+reasons at once. This example project takes them apart one by one and ends with a number you
 can check against a tape measure.
 
 The sensor listens for an echo and reports the time until the returning sound
@@ -10,10 +10,10 @@ crossed a threshold. We turn that into a distance ourselves: time times the
 speed of sound, halved, because the sound travelled there and back.
 
 Run:
-    python labs/01_sr04_ruler/lab1_sr04.py                  live reading in the terminal
-    python labs/01_sr04_ruler/lab1_sr04.py --plot           live window with a time plot
-    python labs/01_sr04_ruler/lab1_sr04.py --truth 1.550    live reading against a tape
-    python labs/01_sr04_ruler/lab1_sr04.py --study          how much averaging you need
+    python examples/01_sr04_ruler/sr04_ruler.py                  live reading in the terminal
+    python examples/01_sr04_ruler/sr04_ruler.py --plot           live window with a time plot
+    python examples/01_sr04_ruler/sr04_ruler.py --truth 1.550    live reading against a tape
+    python examples/01_sr04_ruler/sr04_ruler.py --study          how much averaging you need
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/01_sr04_ruler/lab1_sr04.py\n"
+        "    .venv/bin/python examples/01_sr04_ruler/sr04_ruler.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -40,7 +40,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
 PIEZO_HZ = 40_000
 
 # Ask the board how often to measure. Set it explicitly rather than trusting
-# whatever the previous lab left behind: lab 2 raises the rate and, if it is
+# whatever the previous example project left behind: example project 2 raises the rate and, if it is
 # killed instead of stopped, the setting stays on the board.
 SAMPLE_PERIOD_US = 20_000
 
@@ -154,7 +154,7 @@ def compose_plot(history, args, step_m: float, rate: float):
     """Render one frame of the plot window.
 
     Kept separate from the loop so a screenshot for the README can be produced
-    headless — same pixels the lab draws, no window popping up.
+    headless — same pixels the example project draws, no window popping up.
 
     `history` is a list of (timestamp, reading or None, answer, was_dropped).
     """
@@ -217,7 +217,7 @@ def compose_plot(history, args, step_m: float, rate: float):
     for a, b in zip(pts, pts[1:]):
         cv2.line(frame, a, b, COL_RAW, 1, cv2.LINE_AA)
 
-    # The answer: averaged with outliers dropped. The whole point of the lab is
+    # The answer: averaged with outliers dropped. The whole point of the example project is
     # that this line stands still while the comb jumps.
     ans = [(px(t), py(a)) for t, _, a, _ in history if a is not None]
     for a, b in zip(ans, ans[1:]):
@@ -284,7 +284,7 @@ def run_plot(dev, args) -> None:
     win = Window(args.window)
     history: list[tuple[float, float | None, float | None, bool]] = []
 
-    title = "DEPZ Lab 1 - an honest ruler"
+    title = "DEPZ Example project 1 - an honest ruler"
     cv2.namedWindow(title, cv2.WINDOW_AUTOSIZE)
 
     frames = 0
@@ -347,7 +347,7 @@ def run_live(dev, args) -> None:
     win = Window(args.window)
 
     header = [
-        "DEPZ · Lab 1 · An honest ruler",
+        "DEPZ · Example project 1 · An honest ruler",
         f"port {dev.port}   air {args.temp:.0f} °C   "
         f"speed of sound {speed_of_sound(args.temp):.0f} m/s   step ~{step:.1f} mm",
         "",
@@ -403,7 +403,7 @@ def run_study(dev, args) -> None:
     step_m = step / 1000.0
     need = max(STUDY_WINDOWS) * args.blocks
 
-    print("DEPZ · Lab 1 · how much averaging you need")
+    print("DEPZ · Example project 1 · how much averaging you need")
     print(f"port {dev.port}   air {args.temp:.0f} °C   step ~{step:.1f} mm")
     if not args.temp_given:
         print("  no temperature given, assuming 20 °C — "
@@ -528,7 +528,7 @@ def run_study(dev, args) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Lab 1: an honest ruler on HC-SR04")
+    p = argparse.ArgumentParser(description="Example project 1: an honest ruler on HC-SR04")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--temp", type=float,
                    help="air temperature, °C (20 by default)")

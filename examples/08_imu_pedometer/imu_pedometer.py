@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Lab 8 — A pedometer (BNO086 IMU).
+"""Example project 8 — A pedometer (BNO086 IMU).
 
 A step is a collision. Your foot hits the floor, the floor hits back, and for a
 tenth of a second everything you are carrying is thrown upwards. The sensor
 feels that as a spike in acceleration, and counting steps is counting spikes.
 
 Which sounds like one line of code, and is not, because two things get in the
-way and both are in this lab.
+way and both are in this example project.
 
 The first is that the sensor also feels everything else — a hand swinging, a
 board set down on a desk, a door closing. A number has to be picked below which
@@ -22,20 +22,20 @@ rolls, the other leg swings through; a good walk produces a cluster of peaks a
 few hundredths of a second apart, and counting all of them counts far too many.
 So after each accepted step the counter stops listening for a while — long
 enough to let a footfall finish, short enough not to miss the next one. That
-waiting time is the second number, and it decides the fastest walk the lab can
+waiting time is the second number, and it decides the fastest walk the example project can
 follow: 0.25 s means at most 240 steps a minute.
 
-The chip has its own pedometer, and the lab shows both counts side by side.
+The chip has its own pedometer, and the example project shows both counts side by side.
 That is not decoration. Watch when the chip starts counting: on the bench walk
 it reported nothing for the first three seconds and then jumped straight to 2,
 because it waits to be convinced that a rhythm is a walk. Our count starts on
 the first footfall. Neither is wrong — they answer slightly different questions.
 
 Run:
-    python labs/08_imu_pedometer/lab8_imu.py                  live count in a window
-    python labs/08_imu_pedometer/lab8_imu.py --check 20       walk 20, see who was right
-    python labs/08_imu_pedometer/lab8_imu.py --threshold 3    accept weaker spikes
-    python labs/08_imu_pedometer/lab8_imu.py --terminal       text output, for ssh
+    python examples/08_imu_pedometer/imu_pedometer.py                  live count in a window
+    python examples/08_imu_pedometer/imu_pedometer.py --check 20       walk 20, see who was right
+    python examples/08_imu_pedometer/imu_pedometer.py --threshold 3    accept weaker spikes
+    python examples/08_imu_pedometer/imu_pedometer.py --terminal       text output, for ssh
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/08_imu_pedometer/lab8_imu.py\n"
+        "    .venv/bin/python examples/08_imu_pedometer/imu_pedometer.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -97,7 +97,7 @@ SMOOTH = 3
 # the peaks turn into a hedge.
 TRACE_S = 6.0
 
-# Still for this long and the lab calls the walk finished — used by --check to
+# Still for this long and the example project calls the walk finished — used by --check to
 # know when to print, and to work out cadence over the walk rather than over
 # the time somebody spent standing about afterwards.
 QUIET_S = 3.0
@@ -120,7 +120,7 @@ class StepCounter:
 
     Deliberately the simplest thing that can work: no filtering beyond a
     three-sample mean, no frequency analysis, nothing adaptive. Everything it
-    gets wrong, it gets wrong visibly — which is the point of a lab.
+    gets wrong, it gets wrong visibly — which is the point of an example project.
     """
 
     def __init__(self, threshold: float, refractory: float) -> None:
@@ -169,7 +169,7 @@ def draw_window(counter: StepCounter, trace, chip_steps: int, now: float,
     img = np.full((WIN_H, WIN_W, 3), COL_BG, dtype=np.uint8)
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    cv2.putText(img, "DEPZ - Lab 8 - Pedometer", (40, 44), font, 0.72,
+    cv2.putText(img, "DEPZ - Example project 8 - Pedometer", (40, 44), font, 0.72,
                 COL_TEXT, 1, cv2.LINE_AA)
     cv2.putText(img, "a step is a collision: count the spikes, ignore the echoes",
                 (40, 72), font, 0.46, COL_DIM, 1, cv2.LINE_AA)
@@ -251,7 +251,7 @@ def run_window(dev, args) -> None:
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2
 
-    title = "DEPZ Lab 8 - pedometer"
+    title = "DEPZ Example project 8 - pedometer"
     counter = StepCounter(args.threshold, args.refractory)
     chip_at_reset = 0
     trace: deque = deque(maxlen=int(TRACE_S * REPORT_HZ) + 50)
@@ -301,7 +301,7 @@ def run_terminal(dev, args) -> None:
 def run_check(dev, args) -> None:
     """Walk a known number of steps and see what each counter made of it.
 
-    The lab starts counting on the first footfall and stops when the walking
+    The example project starts counting on the first footfall and stops when the walking
     does, so there is nothing to press and no countdown to race.
     """
     counter = StepCounter(args.threshold, args.refractory)
@@ -336,7 +336,7 @@ def run_check(dev, args) -> None:
     chip_steps = chip - chip_start
     span = counter.step_times[-1] - counter.step_times[0]
     print(f"\n\n  you walked        {args.check}")
-    print(f"  this lab counted  {counter.steps:3d}   "
+    print(f"  this example project counted  {counter.steps:3d}   "
           f"{counter.steps - args.check:+d}")
     print(f"  the chip counted  {chip_steps:3d}   {chip_steps - args.check:+d}")
     print(f"\n  over {span:.1f} s, {counter.cadence():.0f} steps per minute, "
@@ -365,7 +365,7 @@ def has_display() -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Lab 8: a pedometer on a BNO086 IMU")
+    p = argparse.ArgumentParser(description="Example project 8: a pedometer on a BNO086 IMU")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--terminal", action="store_true",
                    help="text readout instead of the window (for ssh)")

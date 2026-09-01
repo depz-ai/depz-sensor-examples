@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""Lab 5 (two-beam variant) — In and out through a doorway (VL53L8CH).
+"""Example project 5 (two-beam variant) — In and out through a doorway (VL53L8CH).
 
-Lab 3 ended with a promise: to tell in from out you need two sensors side by
-side, because whichever one fires first tells you the direction. This lab keeps
+Example project 3 ended with a promise: to tell in from out you need two sensors side by
+side, because whichever one fires first tells you the direction. This example project keeps
 that promise without a second board. The 8x8 matrix is cut down the middle
 into two "beams" — the three left columns and the three right columns, with
 the two middle columns left as a gap so the beams do not touch — and each half
-is nothing more than a presence detector like the one in lab 3.
+is nothing more than a presence detector like the one in example project 3.
 
 A person walking through covers the left beam, then both, then only the right
 one, then nothing. Read the order of those states and the direction falls out. That is the
-whole lab: two booleans and a short memory.
+whole example project: two booleans and a short memory.
 
 Run:
-    python labs/05_tof_direction_f/lab5_tof.py               live window
-    python labs/05_tof_direction_f/lab5_tof.py --swap        if in and out are backwards
-    python labs/05_tof_direction_f/lab5_tof.py --vertical    if people cross top-to-bottom
-    python labs/05_tof_direction_f/lab5_tof.py --terminal    text output, for ssh
+    python examples/05_tof_direction/tof_direction.py               live window
+    python examples/05_tof_direction/tof_direction.py --swap        if in and out are backwards
+    python examples/05_tof_direction/tof_direction.py --vertical    if people cross top-to-bottom
+    python examples/05_tof_direction/tof_direction.py --terminal    text output, for ssh
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/05_tof_direction_f/lab5_tof.py\n"
+        "    .venv/bin/python examples/05_tof_direction/tof_direction.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -47,18 +47,18 @@ SIDE = 8
 ZONES = SIDE * SIDE
 RANGING_HZ = 15
 
-# Lab 4 measured this: the raw grid arrives a quarter turn out, and one
+# Example project 4 measured this: the raw grid arrives a quarter turn out, and one
 # clockwise rotation puts column 0 on the left of the field. The two beams are
 # defined by column, so without this rotation "left" would mean "top".
 GRID_QUARTER_TURNS = -1
 
-# Only these two statuses carry a range worth using (lab 4).
+# Only these two statuses carry a range worth using (example project 4).
 VALID_STATUS = (5, 9)
 
 # The two beams, as column slices: the left half and the right half, nothing
 # left over. The first version kept columns 3-4 as a gap between the beams,
 # and the bench threw it out: a person walks the gap in about 0.4 s, both
-# beams are dark for that long, and the lab closed every crossing in the
+# beams are dark for that long, and the example project closed every crossing in the
 # middle — one walk-through became two half-events. There is no gap now; the
 # order of the beams is read from timestamps, so they may overlap freely.
 LEFT_COLS = slice(0, 4)
@@ -77,7 +77,7 @@ BEAM_PARTS = {
 BACKGROUND_S = 3.0
 
 # A cell counts as covered when it reads this much nearer than its own
-# background. Lab 4 put the noise of a still cell at 4.3 mm typical, 15 mm at
+# background. Example project 4 put the noise of a still cell at 4.3 mm typical, 15 mm at
 # worst; 0.15 m is ten times the worst case.
 NEAR_MARGIN_M = 0.15
 
@@ -87,12 +87,12 @@ OPEN_SPACE_M = 3.0
 
 # A beam has 24 cells. It switches on at ENTER_CELLS covered and off only when
 # it drops to EXIT_CELLS — two levels, so a shoulder on the edge of a beam does
-# not make it chatter (the hysteresis trick from lab 3, counted in cells).
+# not make it chatter (the hysteresis trick from example project 3, counted in cells).
 ENTER_CELLS = 5
 EXIT_CELLS = 2
 
-# A beam that goes dark stays "on" for this long before the lab believes it.
-# Lab 3 measured flicker inside one crossing at 40-160 ms and real gaps at
+# A beam that goes dark stays "on" for this long before the example project believes it.
+# Example project 3 measured flicker inside one crossing at 40-160 ms and real gaps at
 # seconds — 300 ms sits in the empty space between them.
 RELEASE_S = 0.30
 
@@ -109,7 +109,7 @@ MIN_CROSSING_MS = 150
 # Fallback for runners. At 15 frames a second someone running crosses the
 # whole field in six or eight frames and often lights both beams in the same
 # frame — then the beams have the same switch-on time and there is no "first".
-# For that case the lab also remembers where across the field the covered
+# For that case the example project also remembers where across the field the covered
 # cells sat in the first and the last frame of the crossing, and if that
 # centre moved at least this many lines, the move is the direction.
 MIN_TRAVEL_LINES = 3.0
@@ -174,7 +174,7 @@ class Persistence:
 
 
 class Beam:
-    """One half of the matrix acting as a lab-3 style presence detector.
+    """One half of the matrix acting as a presence detector in the style of example project 3.
 
     Three things separate it from a bare cell count: it needs ENTER_CELLS to
     switch on but only EXIT_CELLS to stay on, and once the cells go it waits
@@ -375,7 +375,7 @@ def draw_window(mask: np.ndarray, counter: Counter, rate: float,
     img = np.full((PLOT_H, PLOT_W, 3), COL_BG, dtype=np.uint8)
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    cv2.putText(img, "DEPZ - Lab 5 - In and out, two-beam variant", (40, 40),
+    cv2.putText(img, "DEPZ - Example project 5 - In and out, two-beam variant", (40, 40),
                 font, 0.72, COL_TEXT, 1, cv2.LINE_AA)
     (name_a, _), (name_b, _) = counter.beams
     cv2.putText(img, f"{name_a} beam = one half of the field, {name_b} beam = "
@@ -443,7 +443,7 @@ def run_window(dev, background: np.ndarray, args) -> None:
 
     counter = Counter(swap=args.swap, layout=args.layout)
     persist = Persistence()
-    title = "DEPZ Lab 5 - two-beam counter"
+    title = "DEPZ Example project 5 - two-beam counter"
     started = time.monotonic()
     frames = 0
     dev.start_ranging()
@@ -507,7 +507,7 @@ def has_display() -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Lab 5 (two-beam variant): in and out through a doorway")
+        description="Example project 5 (two-beam variant): in and out through a doorway")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--swap", action="store_true",
                    help="call right-to-left 'in' instead of left-to-right")

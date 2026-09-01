@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Lab 2 — Parking sensor (HC-SR04 ultrasonic).
+"""Example project 2 — Parking sensor (HC-SR04 ultrasonic).
 
-The opposite problem to lab 1. There we chased accuracy and paid for it with
+The opposite problem to example project 1. There we chased accuracy and paid for it with
 time: the more readings you average, the honester the millimetres. A parking
 sensor does not need millimetres — it needs to warn you in time. So there is
-almost no averaging here, and the whole lab is about where the line between
+almost no averaging here, and the whole example project is about where the line between
 "accurate" and "in time" runs.
 
 What it does: shows an approach bar and beeps faster the closer the object gets.
 Inside the red threshold the beeping turns into a solid tone.
 
 Run:
-    python labs/02_sr04_parking/lab2_sr04.py                 zones at 0.4 / 1.5 m
-    python labs/02_sr04_parking/lab2_sr04.py --near 0.3      your own red zone, metres
-    python labs/02_sr04_parking/lab2_sr04.py --mute          no sound
+    python examples/02_sr04_parking/sr04_parking.py                 zones at 0.4 / 1.5 m
+    python examples/02_sr04_parking/sr04_parking.py --near 0.3      your own red zone, metres
+    python examples/02_sr04_parking/sr04_parking.py --mute          no sound
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/02_sr04_parking/lab2_sr04.py\n"
+        "    .venv/bin/python examples/02_sr04_parking/sr04_parking.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -69,7 +69,7 @@ GREEN, YELLOW, RED, GREY, RESET = "\033[32m", "\033[33m", "\033[31m", "\033[90m"
 
 
 class Beeper:
-    """Beeps through `paplay`, started once for the whole lab.
+    """Beeps through `paplay`, started once for the whole example project.
 
     Launching the player per beep is not an option: the red zone fires sixteen
     a second while starting a process takes tens of milliseconds. So we keep one
@@ -173,7 +173,7 @@ def bar(metres: float | None, full_scale: float, color: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Lab 2: a parking sensor on HC-SR04")
+    p = argparse.ArgumentParser(description="Example project 2: a parking sensor on HC-SR04")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--temp", type=float, default=20.0,
                    help="air temperature, °C (millimetres hardly matter for zones)")
@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
     sound_note = ("   sound off" if args.mute
                   else ("" if beeper.enabled else "   no sound: paplay not found"))
 
-    print("DEPZ · Lab 2 · Parking sensor")
+    print("DEPZ · Example project 2 · Parking sensor")
     print(f"port {dev.port}   zones: STOP ≤ {args.near:.3f} m, "
           f"close ≤ {args.far:.3f} m" + sound_note)
     print()

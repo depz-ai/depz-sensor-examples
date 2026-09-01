@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Lab 4 — The first depth map (VL53L8CH time-of-flight matrix).
+"""Example project 4 — The first depth map (VL53L8CH time-of-flight matrix).
 
 The ultrasonic sensor answered with one number. This one answers with 64 at a
 time: an 8x8 grid of little laser rangefinders looking through a shared lens,
 each covering its own narrow slice of the scene.
 
-Two things bite everyone on the first run, and this lab is about both.
+Two things bite everyone on the first run, and this example project is about both.
 
 Cells with nothing to reflect off do not report "nothing" — they report a
 number, and the number is garbage: a zero, a negative, or a plausible-looking
@@ -17,11 +17,11 @@ that really is flat does not have to arrive as 64 equal numbers. Whether it does
 is a fact about the sensor, and --flat measures it against a tape.
 
 Run:
-    python labs/04_tof_depth_map/lab4_tof.py                 live map in a window
-    python labs/04_tof_depth_map/lab4_tof.py --raw           same, validity filter off
-    python labs/04_tof_depth_map/lab4_tof.py --truth 1.000   centre against a tape
-    python labs/04_tof_depth_map/lab4_tof.py --flat          point at a flat wall
-    python labs/04_tof_depth_map/lab4_tof.py --terminal      text map, for ssh
+    python examples/04_tof_depth_map/tof_depth_map.py                 live map in a window
+    python examples/04_tof_depth_map/tof_depth_map.py --raw           same, validity filter off
+    python examples/04_tof_depth_map/tof_depth_map.py --truth 1.000   centre against a tape
+    python examples/04_tof_depth_map/tof_depth_map.py --flat          point at a flat wall
+    python examples/04_tof_depth_map/tof_depth_map.py --terminal      text map, for ssh
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ except ImportError:  # the SDK lives in the project venv, not in system Python
     raise SystemExit(
         "depz_sensor_sdk is missing — you are probably running system Python.\n"
         "Use the project environment:\n"
-        "    .venv/bin/python labs/04_tof_depth_map/lab4_tof.py\n"
+        "    .venv/bin/python examples/04_tof_depth_map/tof_depth_map.py\n"
         "or create it first:\n"
         "    python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     )
@@ -54,7 +54,7 @@ ZONES = SIDE * SIDE
 RANGING_HZ = 15     # the maximum at 8x8; 4x4 can go to 60
 
 # The lens sees a square 45° by 45°, split evenly between the zones. Everything
-# geometric in this lab comes out of these two numbers.
+# geometric in this example project comes out of these two numbers.
 FOV_DEG = 45.0
 ZONE_DEG = FOV_DEG / SIDE
 
@@ -214,7 +214,7 @@ def map_lines(dist: np.ndarray, status: np.ndarray) -> list[str]:
 
 
 def run_live(dev, args) -> None:
-    print("DEPZ · Lab 4 · The first depth map")
+    print("DEPZ · Example project 4 · The first depth map")
     print(f"port {dev.port}   {SIDE}×{SIDE} zones   {RANGING_HZ} Hz   "
           f"field of view {FOV_DEG:.0f}°, {ZONE_DEG:.2f}° per zone")
     if args.raw:
@@ -270,7 +270,7 @@ def run_live(dev, args) -> None:
 def fill_holes(grid: np.ndarray) -> np.ndarray:
     """Guess a distance for every empty cell from the cells around it.
 
-    Only for the smoothed picture, never for a number the lab reports. An
+    Only for the smoothed picture, never for a number the example project reports. An
     interpolator handed a NaN spreads it, so the holes have to go before
     smoothing — but what replaces them is invented, and that is precisely why
     the picture sits next to the tiles rather than instead of them.
@@ -298,7 +298,7 @@ def draw_picture(dist: np.ndarray, size: int):
 
     Two things separate it from the tiles. Holes are filled in, and the colour
     scale is stretched over what this frame actually contains instead of the
-    lab's fixed one — a room a metre away spans 20 cm of depth, and on a scale
+    example project's fixed one — a room a metre away spans 20 cm of depth, and on a scale
     that runs to 2.5 m all of it is the same yellow. Stretched, the same 20 cm
     uses the whole ramp and shapes appear.
 
@@ -334,7 +334,7 @@ def draw_tiles(dist: np.ndarray, status: np.ndarray, subtitle: str,
     """Render one frame of the map window.
 
     Kept separate from the loop so a screenshot for the README can be produced
-    headless — same pixels the lab draws, no window popping up.
+    headless — same pixels the example project draws, no window popping up.
     """
     # OpenCV ships a Qt build with no fonts of its own, so Qt prints a font
     # warning on every start. Nothing here depends on Qt fonts — every label in
@@ -348,7 +348,7 @@ def draw_tiles(dist: np.ndarray, status: np.ndarray, subtitle: str,
     img = np.full((PLOT_H, PLOT_W, 3), COL_BG, dtype=np.uint8)
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    cv2.putText(img, "DEPZ - Lab 4 - The first depth map", (TILE_PAD_L, 40),
+    cv2.putText(img, "DEPZ - Example project 4 - The first depth map", (TILE_PAD_L, 40),
                 font, 0.72, COL_TEXT, 1, cv2.LINE_AA)
     cv2.putText(img, subtitle, (TILE_PAD_L, 68), font, 0.46, COL_DIM, 1, cv2.LINE_AA)
 
@@ -451,7 +451,7 @@ def run_plot(dev, args) -> None:
     os.environ.setdefault("QT_LOGGING_RULES", "default.warning=false")
     import cv2
 
-    title = "DEPZ Lab 4 - depth map"
+    title = "DEPZ Example project 4 - depth map"
     started = time.monotonic()
     frames = 0
     dev.start_ranging()
@@ -497,7 +497,7 @@ def run_flat(dev, args) -> None:
     1/cos of the angle — at the corners of this grid, thirteen percent, far too
     much to shrug off.
     """
-    print("DEPZ · Lab 4 · a flat wall through 64 eyes")
+    print("DEPZ · Example project 4 · a flat wall through 64 eyes")
     print(f"port {dev.port}   {SIDE}×{SIDE} zones   "
           f"{FOV_DEG:.0f}° field, {ZONE_DEG:.2f}° per zone")
     print()
@@ -614,7 +614,7 @@ def has_display() -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        description="Lab 4: the first depth map on a VL53L8CH ToF matrix")
+        description="Example project 4: the first depth map on a VL53L8CH ToF matrix")
     p.add_argument("--port", help="board port, if several are plugged in")
     p.add_argument("--terminal", action="store_true",
                    help="text map in the console instead of the window (for ssh)")
@@ -655,7 +655,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.flat:
             run_flat(dev, args)
         elif args.terminal or not has_display():
-            # The window is the default here, unlike the ultrasonic labs: 64
+            # The window is the default here, unlike the ultrasonic example projects: 64
             # numbers refreshed fifteen times a second are a picture, and a
             # picture read as a table of digits is not read at all. Over ssh
             # there is no window to open, so the text map stands in.

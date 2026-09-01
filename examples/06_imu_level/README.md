@@ -1,25 +1,25 @@
-# Lab 6. A spirit level
+# Example project 6. A spirit level
 
 **Sensor:** BNO086 IMU
 **What you get:** tilt in degrees, from the one thing an IMU knows for free —
 which way is down. Verified against a tape measure to 0.6°, and the story of
 where that 0.6° comes from.
 
-![The lab window: a bubble in a round eye, the angles beside it](img/window.png)
+![The example project window: a bubble in a round eye, the angles beside it](img/window.png)
 
-*What the lab shows when you run it — the wedge measurement from further down
+*What the example project shows when you run it — the wedge measurement from further down
 this page. The board rests on a plank that was declared flat with the Z key,
 and one end of the plank has since been raised by 0.056 m over its 0.794 m.*
 
 ## Why
 
-The first three labs measured distance and the fourth measured 64 distances at
+The first three example projects measured distance and the fourth measured 64 distances at
 once. This sensor measures nothing you can put a tape on. It reports
 orientation — and orientation is where beginners lose a week, because the
 obvious way in is the quaternion, and the quaternion is the one output that is
 wrong when you switch the board on.
 
-So this lab starts one step earlier, with the part that is trustworthy from the
+So this example project starts one step earlier, with the part that is trustworthy from the
 first report: **gravity**.
 
 The accelerometer feels it always, everywhere, as a push of about 9.8 m/s²
@@ -30,7 +30,7 @@ Tip the board and those three numbers swing. The angle they swing through is
 the tilt.
 
 Nothing else is needed. No magnetometer, no calibration, no quaternion — those
-begin in Lab 7. One report, and the sensor is already useful:
+begin in example project 7. One report, and the sensor is already useful:
 
 ```python
 dev.enable_gravity(hz=50)
@@ -40,7 +40,7 @@ for rep in dev.reports(sensors=SensorId.GRAVITY):
 
 ## The board's axes, measured rather than assumed
 
-Lab 4's depth map arrived rotated a quarter turn from what the datasheet
+Example project 4's depth map arrived rotated a quarter turn from what the datasheet
 suggested, so nothing here is taken on trust either. Board flat on the table,
 chip up, USB cable towards you:
 
@@ -66,7 +66,7 @@ business, and it has no opinion about it.
 
 That is not a shortcoming to be worked around — it is how every spirit level
 works. Rest one on a shelf and it does not tell you about the shelf in the
-abstract; it compares the shelf to gravity. The lab does the same, with one
+abstract; it compares the shelf to gravity. The example project does the same, with one
 addition: pressing **Z** declares the current pose flat, and every angle after
 that is measured from *that* surface rather than from the board's own +Z.
 
@@ -170,7 +170,7 @@ amount of arm-waving reaches it.
 Half a degree is 1 cm over a metre. For hanging a shelf, checking a camera rig
 or telling a slope from a wobble, it is fine. For anything finer the offset has
 to be measured against known directions and stored on the chip, which is
-calibration proper — Lab 7.
+calibration proper — example project 7.
 
 ## What "steady" looks like
 
@@ -178,7 +178,7 @@ With the board untouched on a table, the reading wanders by **4–5 arcminutes**
 (0.07–0.08°), reported live in the window as `noise`. That is the honest
 resolution of this level.
 
-The lab calls a surface level below 0.20°, a threshold set a little above the
+The example project calls a surface level below 0.20°, a threshold set a little above the
 noise so a still board reads LEVEL steadily instead of flickering. It is a
 choice, not a measurement: a builder's spirit level is graded around 0.5 mm/m,
 which is 0.03° — well past what this sensor can see.
@@ -186,18 +186,18 @@ which is 0.03° — well past what this sensor can see.
 ## Run it
 
 ```bash
-.venv/bin/python labs/06_imu_level/lab6_imu.py                       # live bubble in a window
-.venv/bin/python labs/06_imu_level/lab6_imu.py --range 5             # finer scale, ±5°
-.venv/bin/python labs/06_imu_level/lab6_imu.py --zero                # start already zeroed
-.venv/bin/python labs/06_imu_level/lab6_imu.py --check               # average one pose, print it
-.venv/bin/python labs/06_imu_level/lab6_imu.py --check --truth 4.045 # against a known wedge
-.venv/bin/python labs/06_imu_level/lab6_imu.py --terminal            # text readout, for ssh
+.venv/bin/python examples/06_imu_level/imu_level.py                       # live bubble in a window
+.venv/bin/python examples/06_imu_level/imu_level.py --range 5             # finer scale, ±5°
+.venv/bin/python examples/06_imu_level/imu_level.py --zero                # start already zeroed
+.venv/bin/python examples/06_imu_level/imu_level.py --check               # average one pose, print it
+.venv/bin/python examples/06_imu_level/imu_level.py --check --truth 4.045 # against a known wedge
+.venv/bin/python examples/06_imu_level/imu_level.py --terminal            # text readout, for ssh
 ```
 
 In the window: **Z** declares the current pose flat, **R** goes back to the
 board's own axes, **Q** quits.
 
-The window is the default, as in the ToF labs. Two angles would read perfectly
+The window is the default, as in the ToF example projects. Two angles would read perfectly
 well as text, but a bubble shows the direction of the lean at a glance, which
 is the whole reason spirit levels have bubbles. Over ssh there is no window to
-open, so the lab notices and prints the text readout instead.
+open, so the example project notices and prints the text readout instead.

@@ -1,23 +1,23 @@
-# Lab 7. Orientation in space
+# Example project 7. Orientation in space
 
 **Sensor:** BNO086 IMU
 **What you get:** the full orientation of the board — and the two ways that
 number lies to you without ever looking broken.
 
-![The lab window: the board redrawn in space, angles beside it](img/window.png)
+![The example project window: the board redrawn in space, angles beside it](img/window.png)
 
-*What the lab shows when you run it. The green box is the board: pale side with
+*What the example project shows when you run it. The green box is the board: pale side with
 a chip is the component side, the grey block is the USB connector. Turn the real
 one and this one follows.*
 
 ## Why
 
-Lab 6 asked the sensor a single question — which way is down — and got an
-answer that could be trusted from the first report. This lab asks the whole
+Example project 6 asked the sensor a single question — which way is down — and got an
+answer that could be trusted from the first report. This example project asks the whole
 question: how is the board turned, in all three directions at once.
 
 The answer comes back as a **quaternion**: four numbers describing one rotation.
-It is worth knowing what they are, but not worth dwelling on, because this lab
+It is worth knowing what they are, but not worth dwelling on, because this example project
 is not about the notation. It is about the two ways this output goes wrong while
 looking perfectly healthy.
 
@@ -54,7 +54,7 @@ magnetic readings and no idea yet how much of that field is the Earth and how
 much is the metal of the board, the desk and the laptop next to it. Until it can
 separate them, north is a guess.
 
-## Waiting does not help — and the lab proves it
+## Waiting does not help — and the example project proves it
 
 The obvious response is to give it a moment to settle. Measured on the bench,
 board flat and untouched:
@@ -94,7 +94,7 @@ code waits for a 3 before it starts, it may wait forever.
 
 ## Two quaternions, and which one you actually want
 
-The board reports two rotation vectors at once, and the lab shows both because
+The board reports two rotation vectors at once, and the example project shows both because
 the difference between them is the practical lesson:
 
 | | ROTATION_VECTOR | GAME_ROTATION_VECTOR |
@@ -116,7 +116,7 @@ GAME yaw  -81.9   pitch +12.7   roll -13.7
 ```
 
 Pitch and roll are identical because gravity gives them to both, and gravity
-needs no calibration — that is Lab 6 all over again. The two disagree only about
+needs no calibration — that is example project 6 all over again. The two disagree only about
 yaw, and only by a constant: the angle between north and wherever the board
 happened to be pointing when the game vector started. The window prints that
 constant live, and it is the whole of what the compass adds.
@@ -182,7 +182,7 @@ One slow circle on the table did all of it: 120° of uncertainty down to 16°.
 The figure-of-eight everyone recommends added nothing measurable, and the
 nose-up step briefly made things worse.
 
-What the chip learns can be written into its own memory, which is what the lab
+What the chip learns can be written into its own memory, which is what the example project
 does at the end of `--calibrate` (and what **S** does in the window). That is
 worth doing — but do not expect it to hold:
 
@@ -220,7 +220,7 @@ The game vector is the steady one. Gyroscope-only heading is supposed to be the
 one that drifts, and over ten minutes on a table it moved by a tenth of a
 degree.
 
-That third row is the honest oddity of this lab. Once, over ten minutes, the
+That third row is the honest oddity of this example project. Once, over ten minutes, the
 fused heading swung through a right angle while the board sat still — the
 compass, which is meant to hold a heading down, dragged it across the room
 instead. `accuracy` was not being logged that run, and it did not happen again
@@ -251,12 +251,12 @@ measured correctly right through it.
 ## Run it
 
 ```bash
-.venv/bin/python labs/07_imu_orientation/lab7_imu.py              # live board in a window
-.venv/bin/python labs/07_imu_orientation/lab7_imu.py --game       # ignore the compass
-.venv/bin/python labs/07_imu_orientation/lab7_imu.py --calibrate  # walk through calibration
-.venv/bin/python labs/07_imu_orientation/lab7_imu.py --drift 120  # leave it still, measure drift
-.venv/bin/python labs/07_imu_orientation/lab7_imu.py --two-poses --truth 90   # check a known angle
-.venv/bin/python labs/07_imu_orientation/lab7_imu.py --terminal   # text output, for ssh
+.venv/bin/python examples/07_imu_orientation/imu_orientation.py              # live board in a window
+.venv/bin/python examples/07_imu_orientation/imu_orientation.py --game       # ignore the compass
+.venv/bin/python examples/07_imu_orientation/imu_orientation.py --calibrate  # walk through calibration
+.venv/bin/python examples/07_imu_orientation/imu_orientation.py --drift 120  # leave it still, measure drift
+.venv/bin/python examples/07_imu_orientation/imu_orientation.py --two-poses --truth 90   # check a known angle
+.venv/bin/python examples/07_imu_orientation/imu_orientation.py --terminal   # text output, for ssh
 ```
 
 In the window: **G** swaps between the two vectors, **T** tares (calls the
