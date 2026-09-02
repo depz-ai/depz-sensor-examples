@@ -2,9 +2,7 @@
 
 > Web version with interactive demos and highlighted code: https://depz.ai/developers/sensors/example-projects/sr04-ruler
 
-![The plot window: raw readings behind, the answer in front](https://depz.ai/examples/sensors-01-ruler.png)
-
-*Ten seconds of readings from a wall 0.530 m away. Pale dots: raw readings. Green line: the project's answer — averaged, outliers dropped. Dashed line: the distance measured with a tape.*
+![On the bench: the DEPZ HC-SR04 USB between a tape measure, a steel ruler and a calliper, with a sketch of the readings](https://depz.ai/examples/sensors-01-bench.jpg)
 
 Hardware used: [Ultrasonic HC-SR04 USB](https://depz.ai/product/ultrasonic-sensor-hc-sr04-usb).
 
@@ -201,6 +199,10 @@ Now the `--temp 30` columns: **about −10 mm at both distances**. The error no 
 
 **`--plot`** draws three things at once: the raw readings as a pale comb, the answer as a solid line, and readings far from the answer — the ones the rejection throws away — as red dots. Add `--truth` and the measured distance shows up as a dashed line, so you can see whether the answer sits on it or beside it.
 
+![The plot window: raw readings behind, the answer in front](https://depz.ai/examples/sensors-01-ruler.png)
+
+*Ten seconds of readings from a wall 0.530 m away. Pale dots: raw readings. Green line: the project's answer — averaged, outliers dropped. Dashed line: the distance measured with a tape.*
+
 **`--study`** collects a sample set (hold the sensor still), draws a histogram — the steps and the stray reflections are both visible there — and builds a table of how far the answer wanders when averaged over N readings, with and without rejection. That table is where the "50 readings clean, 100 with a sofa" numbers come from.
 
 All the flags in one place:
@@ -225,7 +227,7 @@ One bench, one afternoon (21 Aug 2026, room at 30 °C): the HC-SR04 USB lying on
 | Tape distance | In the cone | What it measured |
 |---|---|---|
 | 0.100 m | wall only | the resolution-step measurement (reason 1) |
-| 0.530 m | wall only | the screenshot at the top: `--plot --truth 0.530` |
+| 0.530 m | wall only | the plot screenshot above: `--plot --truth 0.530` |
 | 1.000 m | wall only | stray-echo rate on a clean bench (reason 2) |
 | 1.050 m and 1.550 m | wall only | the two-point tape comparison (reason 3) |
 | 1.550 m | wall + sofa in the lower edge | the interference test: densest cluster vs median (reason 2) |
