@@ -565,6 +565,19 @@ def render_terminal(state: PanelState, args, printed: int) -> int:
     return len(lines)
 
 
+def window_open(cv2, title: str) -> bool:
+    """True while the window is still on screen.
+
+    OpenCV 4 answers 0 for a window the user has closed; OpenCV 5 raises
+    instead ("NULL guiReceiver"), which would end the run with a traceback
+    rather than a quiet exit. Both mean the same thing here.
+    """
+    try:
+        return cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) >= 1
+    except cv2.error:
+        return False
+
+
 def run_plot(dev, args, beeper: Beeper) -> None:
     cv2 = import_cv2()
     title = "DEPZ Example project 2 - parking sensor"
@@ -574,7 +587,7 @@ def run_plot(dev, args, beeper: Beeper) -> None:
             cv2.imshow(title, compose_panel(state, args))
             if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                 break
-            if cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
+            if not window_open(cv2, title):
                 break  # the window's X button quits too
     finally:
         cv2.destroyAllWindows()

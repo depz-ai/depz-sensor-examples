@@ -438,6 +438,19 @@ def draw_window(mask: np.ndarray, counter: Counter, rate: float,
     return img
 
 
+def window_open(cv2, title: str) -> bool:
+    """True while the window is still on screen.
+
+    OpenCV 4 answers 0 for a window the user has closed; OpenCV 5 raises
+    instead ("NULL guiReceiver"), which would end the run with a traceback
+    rather than a quiet exit. Both mean the same thing here.
+    """
+    try:
+        return cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) >= 1
+    except cv2.error:
+        return False
+
+
 def run_window(dev, background: np.ndarray, args) -> None:
     import cv2
 
@@ -460,7 +473,7 @@ def run_window(dev, background: np.ndarray, args) -> None:
             key = cv2.waitKey(1) & 0xFF
             if key in (ord("q"), 27):
                 break
-            if cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
+            if not window_open(cv2, title):
                 break
     finally:
         dev.stop_ranging()
