@@ -1,50 +1,93 @@
-# Example project 5 — In and out: a two-beam counter (VL53L8CH)
+# Detect direction of movement with a single ToF sensor (VL53L8CH / VL53L8CX)
 
-**Sensor:** DEPZ ToF VL53L8CH USB (`1bcf:ed40`) · **Time:** 10 minutes
+> **Full article — the physics, the measured numbers, interactive demos:**
+> https://depz.ai/developers/sensors/example-projects/tof-direction
 
-Example project 3 counted people through a doorway with one ultrasonic beam and ended with
-a limitation: one sensor counts *episodes of presence*, not crossings, and it
-cannot tell left from right. Its README says the fix needs two sensors side by
-side — whichever fires first tells you the direction.
+IN/OUT counting through a doorway with one VL53L8CH or VL53L8CX: split the 8×8 field into two beams — zero false events across 232 empty frames.
 
-This example project keeps that promise with one board. The 8×8 matrix is split into two
-**virtual beams** — the left four columns and the right four. Each beam is
-nothing more than the presence detector from example project 3, and the counter only
-remembers two things per crossing: which beam saw the person first and which
-saw them last.
+![The app window: the two beams, the IN and OUT counters, and the recent events](https://depz.ai/examples/sensors-05-in-out.png)
+
+Hardware used: [ToF VL53L8CH USB](https://depz.ai/product/tof-sensor-vl53l8ch-usb) / [ToF VL53L8CX USB](https://depz.ai/product/tof-sensor-vl53l8cx-usb).
+
+**Sensor:** DEPZ ToF VL53L8CH / VL53L8CX USB · **Time:** 10 minutes
+
+The code is the same for the VL53L8CH and the VL53L8CX: everything this project uses is the 8×8 ranging matrix the two boards share, so it runs unchanged on either.
+
+[The crossings counter](https://depz.ai/developers/sensors/example-projects/sr04-counter) counted people through a doorway with one ultrasonic beam and ended with a limitation: one sensor counts **episodes of presence**, not crossings, and it cannot tell left from right. Its write-up says the fix needs two sensors side by side — whichever fires first tells you the direction.
+
+This project keeps that promise with one board. The 8×8 matrix is split into two **virtual beams** — the left four columns and the right four. Each beam is nothing more than the presence detector from the crossings counter, and the counter only remembers two things per crossing: which beam saw the person first and which saw them last.
+
+```python
+LEFT_COLS = slice(0, 4)
+RIGHT_COLS = slice(4, 8)
+ALL = slice(0, SIDE)
+
+# The board may be mounted so that people cross the field top-to-bottom
+# instead of left-to-right. --vertical cuts the matrix into a top beam and a
+# bottom beam instead; the names "left"/"right" become "top"/"bottom".
+BEAM_PARTS = {
+    "horizontal": (("left", (ALL, LEFT_COLS)), ("right", (ALL, RIGHT_COLS))),
+    "vertical": (("top", (LEFT_COLS, ALL)), ("bottom", (RIGHT_COLS, ALL))),
+}
+```
 
 | first on | last off | outcome |
 |---|---|---|
 | left | right | **in** |
 | right | left | **out** |
-| anything else | | ignored — one beam only, both at once, too short |
+| anything else |  | ignored — one beam only, both at once, too short |
 
-Two numbers on the screen, nothing else: a doorway counter that reports
-"maybes" is a counter nobody reads.
+Two numbers on the screen, nothing else: a doorway counter that reports "maybes" is a counter nobody reads.
 
-`--swap` flips in and out if the sensor is mounted the other way round.
-`--vertical` cuts the matrix into a **top** and a **bottom** beam instead, for a
-board mounted so that people cross the field top-to-bottom.
+```python
+    def _close(self, now: float) -> str | None:
+        self.busy = False
+        held_ms = (self.quiet_since - self.started_at) * 1000.0
+        if held_ms < MIN_CROSSING_MS:
+            return self._ignore(f"too short, {held_ms:.0f} ms")
 
-## Which way is the board pointing?
+        # The beams' answer, if they have one: a clear first and a clear last.
+        a_to_b = None
+        if self.seen_a and self.seen_b and self.a.on_since != self.b.on_since \
+                and self.a.off_at != self.b.off_at:
+            first_is_a = self.a.on_since < self.b.on_since
+            last_is_a = self.a.off_at > self.b.off_at
+            if first_is_a != last_is_a:
+                a_to_b = first_is_a
 
-Nobody can tell from the USB connector: example project 4 found the grid's orientation with
-a hand in the live window, not from the board's markings, and did not record
-how the board was held. So find out the same way — it takes ten seconds:
+        # Otherwise, the runner's fallback: where the patch was at the start
+        # against where it was at the end.
+        travel = self.last_centre - self.first_centre
+        if a_to_b is None and abs(travel) >= MIN_TRAVEL_LINES:
+            a_to_b = travel > 0
 
-1. Start the example project, let it learn the background, then wave a hand slowly across
-   the doorway the way a person would walk.
-2. Watch the green patch. If it travels **left-to-right** across the columns,
-   the default layout is right. If it travels **top-to-bottom**, restart with
-   `--vertical`.
-3. Walk through once in the "in" direction. If the example project says **out**, add `--swap`.
+        if a_to_b is None:
+            if not (self.seen_a and self.seen_b):
+                only = self.name_a if self.seen_a else self.name_b
+                return self._ignore(f"only the {only} beam fired, patch moved "
+                                    f"{travel:+.1f} lines, {held_ms / 1000:.1f} s")
+            return self._ignore(f"no clear direction, patch moved {travel:+.1f} "
+                                f"lines, {held_ms / 1000:.1f} s")
+        self.why_ignored = None
 
-Symptom of the wrong layout: nothing ever counts, because the person lights
-both beams at once instead of one after the other.
+        if self.swap:
+            a_to_b = not a_to_b
+        event = "in" if a_to_b else "out"
+        if a_to_b:
+            self.in_count += 1
+        else:
+            self.out_count += 1
+        self.log.append((now, event))
+        del self.log[:-8]
+        return event
 
-A fuller version would track the centre of the person across all eight
-columns. That one sees more; this one is simpler to reason about and to debug,
-and it is the one to build first.
+    def _ignore(self, why: str) -> None:
+        self.ignored += 1
+        self.why_ignored = why
+        return None
+```
+
+`--swap` flips in and out if the sensor is mounted the other way round. `--vertical` cuts the matrix into a **top** and a **bottom** beam instead, for a board mounted so that people cross the field top-to-bottom.
 
 ## Run
 
@@ -55,60 +98,41 @@ and it is the one to build first.
 .venv/bin/python examples/05_tof_direction/tof_direction.py --terminal    # text, for ssh
 ```
 
-The example project spends the first three seconds (`--background`) learning the empty
-doorway — stand clear. Then walk through.
+The project spends the first three seconds (`--background`) learning the empty doorway — stand clear. Then walk through.
 
-![window](img/window.png)
+```python
+def measure_background(dev, seconds: float) -> tuple[np.ndarray, int]:
+    """Watch the empty doorway and remember what each cell normally sees.
 
-## What makes it work
+    Per cell, not one number: one column may look at a frame two metres away,
+    the next down an empty corridor with nothing to reflect off. Cells of the
+    second kind get NaN and are handled by `covered` on their own terms.
+    """
+    stack: list[np.ndarray] = []
+    dev.start_ranging()
+    try:
+        deadline = time.monotonic() + seconds
+        for frame in dev.frames():
+            stack.append(read_grid(frame))
+            if time.monotonic() >= deadline:
+                break
+    finally:
+        dev.stop_ranging()
 
-Every constant in the file exists because the bench demanded it:
+    cube = np.dstack(stack)
+    seen = np.sum(np.isfinite(cube), axis=2)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        median = np.nanmedian(cube, axis=2)
+    enough = max(3, int(len(stack) * BACKGROUND_MIN_SHARE))
+    background = np.where(seen >= enough, median, np.nan)
+    return background, len(stack)
+```
 
-- **Per-cell background, and a lenient one.** Aimed across a room, only 17 of
-  64 cells answered reliably; the rest looked at surfaces 2–3 m away that answer
-  now and then. Treating "answers sometimes" as "open space" turned every stray
-  answer into an object: an empty room fired the left beam five times in twelve
-  seconds. A cell that answers in ≥ 10 % of the background frames now keeps a
-  background (its median), and only a cell that never answers counts as open
-  space.
-- **Two frames in a row.** A cell has to be covered in two consecutive frames
-  (`PERSIST_FRAMES`) to count. A stray reading lasts one frame; a person does not.
-- **Direction from timestamps, not from states.** The first version waited
-  for a frame in which exactly one beam was on to know where the person was.
-  A fast walker is out of the first beam before its 300 ms release lets go, so
-  both beams look "on" for the whole crossing and no order is ever seen — real
-  walks came out as "turned back" or "rejected". Now each beam remembers when
-  it switched on and off, and the crossing is read as *first on* → *last off*.
-- **Runners get a second opinion.** At 15 fps a runner crosses the field in
-  six to eight frames and often lights both beams in the same frame — no
-  "first". Walking counted fine, running had gaps. So the example project also remembers
-  where across the field the covered cells sat in the first and the last frame
-  of the crossing; when the beams cannot say, a move of ≥ 3 lines
-  (`MIN_TRAVEL_LINES`) decides the direction instead.
-- **Hysteresis in cells.** A beam switches on at 5 covered cells (of 24) and off
-  only below 2 — the example project 3 trick, so a shoulder on the beam's edge does not chatter.
-- **300 ms release**, from example project 3's measurement of in-crossing flicker (40–160 ms)
-  against real gaps (seconds).
-- **No gap between the beams, and 0.8 s of quiet before a crossing closes.**
-  The first version kept columns 3–4 as a gap and closed the crossing the
-  moment both beams were dark. On the bench a walking person crossed the field
-  in a handful of frames — the green patch jumped from one edge to the other
-  with empty frames in between — and every walk became two half-events: a
-  "turned back" on the left, another on the right (12 of them in a minute,
-  0 in/out). Now the beams cover the whole field and the crossing is closed
-  only after `QUIET_S` = 0.8 s with nothing in either beam.
+![The live window over an empty doorway: both beams dark, one IN and one OUT counted, the recent events listed](https://depz.ai/examples/sensors-05-window.png)
 
-## Checked against physics
+## The full write-up
 
-- **Empty room, 20 s, 232 frames:** 0 in, 0 out, 0 turned back, 0 rejected.
-  Before the background/persistence fixes the same scene produced 5 false
-  "turned back" events in 12 s.
-- **Synthetic crossings** fed to the counter (`Counter.update` with hand-made
-  masks): a smooth walk, a walk that jumps edge-to-edge with a 0.4 s hole in
-  the middle, and a one-frame-per-column sprint all count as in/out; a step
-  in and back and a 200 ms single-beam blip count as nothing.
-- **Real walk-throughs (2026-08-24):** walking through the doorway is counted
-  reliably, in both directions. Running is **not verified yet** — before the
-  centre-of-patch fallback a run could cross the whole field between two
-  frames and be missed, and that fallback has not been re-tested on real runs
-  since. Treat this example project as sound at walking pace and unproven above it.
+This README is only the launch pad. The physics, the measured numbers, every flag and the interactive demos are in the full article: **[Detect direction of movement with a single ToF sensor (VL53L8CH / VL53L8CX)](https://depz.ai/developers/sensors/example-projects/tof-direction)**.
+
+The complete program: [`tof_direction.py`](./tof_direction.py).

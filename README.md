@@ -9,6 +9,8 @@ or your own feet.
 This is the sensor season of the series. The stereo-camera one lives in
 [depz-camera-examples](https://github.com/depz-ai/depz-camera-examples).
 
+**Web versions with interactive demos and the full write-ups:** https://depz.ai/developers/sensors/example-projects
+
 **Status:** the ultrasonic and IMU example projects are finished; the ToF example projects are in
 progress. More ToF example projects may follow.
 
