@@ -148,7 +148,9 @@ def beep_period(metres: float | None, near: float, far: float) -> float | None:
     return BEEP_FAST_S + (BEEP_SLOW_S - BEEP_FAST_S) * share
 ```
 
-The sound: the project synthesises a 2200 Hz sine wave itself and pipes it into whatever the system can play — `pw-play` (PipeWire), `paplay` (PulseAudio) or `aplay` (ALSA) on Linux, the built-in `winsound` on Windows, `afplay` on macOS — so there is nothing to install anywhere. The player is started **once for the whole run**, not once per beep — the red zone fires sixteen beeps a second while starting a process takes tens of milliseconds:
+The sound: the project synthesises a 2200 Hz sine wave itself and pipes it into whatever the system can play — `pw-play` (PipeWire), `paplay` (PulseAudio) or `aplay` (ALSA) on Linux, the built-in `winsound` on Windows, `afplay` on macOS — so there is nothing to install anywhere. The player is started **once for the whole run**, not once per beep — the red zone fires sixteen beeps a second while starting a process takes tens of milliseconds.
+
+Finding a player on `PATH` is not enough, though: older `pw-play` builds have no `--raw` at all (PipeWire 1.0.5, for one) and exit immediately on the unknown flag. A dead player takes every beep in silence and reports nothing, so the run turns mute with no error anywhere — hence the check that the process is still alive before settling on it:
 
 ```python
 import math
@@ -158,6 +160,7 @@ import struct
 import subprocess
 import sys
 import threading
+import time
 
 AUDIO_RATE = 22050
 BEEP_HZ = 2200
@@ -192,13 +195,22 @@ class Beeper:
         else:
             for name, argv in self.STREAM_PLAYERS.items():
                 player = shutil.which(name)
-                if player:
-                    self.backend = "stream"
-                    self.proc = subprocess.Popen(
-                        [player, *argv], stdin=subprocess.PIPE,
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    )
-                    break
+                if not player:
+                    continue
+                proc = subprocess.Popen(
+                    [player, *argv], stdin=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                # Being on PATH is not the same as understanding these flags:
+                # older pw-play builds have no --raw and quit at once. Such a
+                # player would swallow every beep in silence, so give it a
+                # moment and move on to the next one if it is already gone.
+                time.sleep(0.05)
+                if proc.poll() is not None:
+                    continue
+                self.backend = "stream"
+                self.proc = proc
+                break
         self.enabled = self.backend is not None
 
     def pulse(self) -> None:

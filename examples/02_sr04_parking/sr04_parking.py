@@ -128,13 +128,22 @@ class Beeper:
         else:
             for name, argv in self.STREAM_PLAYERS.items():
                 player = shutil.which(name)
-                if player:
-                    self.backend = "stream"
-                    self.proc = subprocess.Popen(
-                        [player, *argv], stdin=subprocess.PIPE,
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    )
-                    break
+                if not player:
+                    continue
+                proc = subprocess.Popen(
+                    [player, *argv], stdin=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                # Being on PATH is not the same as understanding these flags:
+                # older pw-play builds have no --raw and quit at once. Such a
+                # player would swallow every beep in silence, so give it a
+                # moment and move on to the next one if it is already gone.
+                time.sleep(0.05)
+                if proc.poll() is not None:
+                    continue
+                self.backend = "stream"
+                self.proc = proc
+                break
         self.enabled = self.backend is not None
 
     def pulse(self) -> None:
