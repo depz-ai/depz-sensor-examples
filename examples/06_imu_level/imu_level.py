@@ -216,7 +216,7 @@ class Level:
 
 def gravity_stream(dev):
     """Gravity vectors from the board, as numpy triples."""
-    for rep in dev.reports(sensors=SensorId.GRAVITY):
+    for rep in dev.reports(where=lambda r: r.sensor_id == SensorId.GRAVITY):
         yield np.array([rep.x, rep.y, rep.z]), rep.accuracy
 
 
@@ -534,7 +534,7 @@ def main(argv: list[str] | None = None) -> int:
         # whatever else is shaking the board and reports each one apart. Asking
         # for it costs one line, and unlike the quaternion of example project 7 it is
         # trustworthy from the first report — nothing here needs calibrating.
-        dev.enable_gravity(hz=REPORT_HZ)
+        dev.enable(SensorId.GRAVITY, hz=REPORT_HZ)
 
         if args.check:
             run_check(dev, args)

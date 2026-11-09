@@ -338,7 +338,7 @@ def notify(state: dict, text: str, seconds: float = 2.5) -> None:
 
 def pump(dev, state: dict, sensors):
     """Yield once per report, keeping `state` current."""
-    for rep in dev.reports(sensors=sensors):
+    for rep in dev.reports(where=lambda r: r.sensor_id in sensors):
         if rep.sensor_id == SensorId.MAGNETOMETER:
             state["mag_acc"] = rep.accuracy
             yield rep
@@ -440,7 +440,7 @@ def run_calibrate(dev, args) -> None:
     The point is not the ritual — it is seeing which movements move the number.
     Holding still does nothing at all, and the readout says so while you wait.
     """
-    dev.enable_magnetometer(hz=10)
+    dev.enable(SensorId.MAGNETOMETER, hz=10)
     state = new_state()
     print("Calibration. Four steps, twelve seconds each — watch the accuracy.\n")
     history = []
@@ -723,8 +723,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Both vectors at once. They cost nothing to run together and the
         # difference between them is half of what this example project has to show.
-        dev.enable_rotation_vector(hz=REPORT_HZ)
-        dev.enable_game_rotation_vector(hz=REPORT_HZ)
+        dev.enable(SensorId.ROTATION_VECTOR, hz=REPORT_HZ)
+        dev.enable(SensorId.GAME_ROTATION_VECTOR, hz=REPORT_HZ)
 
         if args.two_poses:
             run_two_poses(dev, args)

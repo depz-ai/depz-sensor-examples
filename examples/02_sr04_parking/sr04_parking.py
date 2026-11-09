@@ -375,7 +375,7 @@ def states(dev, args, beeper: Beeper):
     history: deque = deque()
     frames = lost = 0
     started = time.monotonic()
-    for m in dev.stream():
+    for m in dev.measurements():
         frames += 1
         now = time.monotonic()
         if not m.valid:

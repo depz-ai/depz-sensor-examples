@@ -31,7 +31,7 @@ try:
     from depz_sensor_sdk import (
         DepzError,
         NoDepzDeviceError,
-        Vl53l8Cx,
+        Vl53l8cx,
         open_device,
     )
 except ImportError:  # the SDK lives in the project venv, not in system Python
@@ -542,7 +542,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Cannot open the board: {exc}", file=sys.stderr)
         return 1
 
-    if not isinstance(dev, Vl53l8Cx):
+    if not isinstance(dev, Vl53l8cx):
         print(f"That board is a {type(dev).__name__}, not the ToF matrix. "
               "Plug in the VL53L8CH, or point --port at it.", file=sys.stderr)
         dev.close()

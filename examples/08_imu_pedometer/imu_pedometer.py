@@ -235,8 +235,8 @@ def walk_stream(dev):
     """(time, |linear acceleration|, chip step count) as they arrive."""
     chip = 0
     t0 = None
-    for rep in dev.reports(sensors=(SensorId.LINEAR_ACCELERATION,
-                                    SensorId.STEP_COUNTER)):
+    for rep in dev.reports(where=lambda r: r.sensor_id in (SensorId.LINEAR_ACCELERATION,
+                                                  SensorId.STEP_COUNTER)):
         if t0 is None:
             t0 = time.monotonic()
         if rep.sensor_id == SensorId.STEP_COUNTER:

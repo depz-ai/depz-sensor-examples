@@ -182,7 +182,7 @@ def measure_background(dev, args) -> tuple[float, float, int]:
     deadline = time.monotonic() + BACKGROUND_S
     dev.start()
     try:
-        for m in dev.stream():
+        for m in dev.measurements():
             if m.valid:
                 samples.append(echo_to_m(m.echo_time_us, args.temp))
             if time.monotonic() >= deadline:
@@ -405,7 +405,7 @@ def run(dev, args) -> None:
 
     dev.start()
     try:
-        for m in dev.stream():
+        for m in dev.measurements():
             frames += 1
             now = time.monotonic()
             value = echo_to_m(m.echo_time_us, args.temp) if m.valid else None

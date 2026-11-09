@@ -1,6 +1,6 @@
 # DEPZ sensor SDK: HC-SR04, VL53L8CX/CH, BNO086.
 # Pulls in pyserial and numpy.
-depz-sensor-sdk>=0.1.3
+depz-sensor-sdk>=0.10.0
 
 # Example project windows: the time plot for the ultrasonic example projects, the 8x8 image for ToF.
 # OpenCV rather than matplotlib: a sensor gives you a stream of frames, not a

@@ -311,7 +311,7 @@ def run_plot(dev, args) -> None:
     started = time.monotonic()
     dev.start()
     try:
-        for m in dev.stream():
+        for m in dev.measurements():
             frames += 1
             now = time.monotonic()
             reading = to_metres(m, args)
@@ -390,7 +390,7 @@ def run_live(dev, args) -> None:
 
     dev.start()
     try:
-        for m in dev.stream():
+        for m in dev.measurements():
             win.add(to_metres(m, args))
             if not win.ready:
                 continue
@@ -447,7 +447,7 @@ def run_study(dev, args) -> None:
     started = time.monotonic()
     dev.start()
     try:
-        for m in dev.stream():
+        for m in dev.measurements():
             attempts += 1
             r = to_metres(m, args)
             if r is None:
